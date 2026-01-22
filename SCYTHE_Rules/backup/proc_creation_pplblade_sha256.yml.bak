@@ -1,0 +1,40 @@
+title: PPLBlade SHA256 Hashes
+id: abf1f25e-2446-4735-b861-23f635c444b0
+status: experimental
+description: Detects SHA256 hashes that have been associated with PPLBlade LSASS Bypass exploitation.
+references:
+  - https://valhalla.nextron-systems.com/info/rule/HKTL_PPLBlade_LSASS_Dumper_Sep23
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/02/05
+tags:
+  - attack.credential_access
+  - attack.t1003.001
+logsource:
+  product: windows
+  service: process_creation
+detection:
+ selection:
+   Hashes|contains:
+     - SHA256=2043da9bdf674884e9d41b9be7144559aa729382fd07e938b7679be2ddc6e61d
+     - SHA256=21212c206ad182f05246e8cc55f8714521835638bacda1678b7764997617fa17
+     - SHA256=d592c4121701e550b48f88b52a772c3cf3f8f6a0df0c0cfb0ccc204884fc1a87
+     - SHA256=de6c0c6e1083caae9957c1c8c361577d158f3cf131b370d0671a3d7b7b9d8a24
+     - SHA256=8d4cca86605faa059ead2fc68c4bc4478634dfc88455de98761fb49c05a23e2a
+     - SHA256=e1053c3b6fde158a8377df6c88bd080425f6358d824a84145d75e2dd997cbf06
+     - SHA256=11107cb48fb5d79e3fd9e2f3e987f9c1f94a770abf1e690c6fb1b3e23cadb76e
+     - SHA256=ce86ef2acabb96f3d6cb74f668a661a31ba6a4c395e357146187529f9b55b48e
+     - SHA256=ae65aa32c6e8d5d8ca6db35e1cc58ec8f748d4e14e91a35e7cf375e6a22413bb
+     - SHA256=fe23ba17c55962893a4d48a9c759e2b74db047af15bf3f8af51bbaefc1d16970
+     - SHA256=83075ac5e8841ab878d97619ba1f48e98f160e214cc33b8e64bf51935752a801
+     - SHA256=1b662f514ba0317bb47ecde96b9fb752a19f644c50df6fd769755e5aad8540aa
+     - SHA256=2252f0f92d592181230fbd6bb39a637cc360cdf52f9919bb55f59e4b254fea88
+     - SHA256=8570529d7347d346e38ec34aa934756c516e1cdbf93ebd3e72dae3eccf92fe55
+     - SHA256=c4eafa0c6c0037a4283c7266e7bd3c5cdebb4f774bc02d39d7dea402a79b2edb
+     - SHA256=ea68b5aefed9a0a8a7bf2e7449e9e677f14fcbd189b4537097c9286133c0b7f5
+     - SHA256=3cd663672f3ff1c3fc1be3ff610a57313d1155aea34955873bb59c088e61cd1a
+     - SHA256=acef5a3cf58ca28c8176521cb038603a34e7803ba1787836f75d8ca49d1b99f6
+     - SHA256=98f0679fd492a67af9288f2ef9ac8f99d808092364c7197e6409987590222a85
+ condition: selection
+falsepositives:
+ - Legitimate software creating or opening files
+level: high

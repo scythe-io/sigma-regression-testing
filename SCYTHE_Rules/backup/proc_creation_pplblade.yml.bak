@@ -1,0 +1,28 @@
+title: PPLBlade Execution
+id: 47b5cf6d-bffb-48b9-8fcc-b4b0cb0dd566
+status: experimental
+description: Detects PPLBlade LSASS Bypass execution.
+references:
+- https://github.com/tastypepperoni/PPLBlade
+- https://tastypepperoni.medium.com/bypassing-defenders-lsass-dump-detection-and-ppl-protection-in-go-7dd85d9a32e6
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/02/05
+tags:
+    - attack.credential_access
+    - attack.t1003.001
+logsource:
+    product: windows
+    service: process_creation
+detection:
+    selection_1:
+        Image|endswith:
+            - '\PPLBlade.exe'
+    selection_2:
+        CommandLine|contains:
+            - '--mode'
+            - '--handle'
+            - '--obfuscate'
+    condition: selection_1 and selection_2
+falsepositives:
+- Unknown
+level: high

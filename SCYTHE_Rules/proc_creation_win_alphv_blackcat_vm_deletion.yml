@@ -1,0 +1,27 @@
+title: ALPHV BlackCat VM and Shadow Copy Deletion Commands
+id: c8b86c71-f113-493c-8624-1052f7b94550
+status: experimental
+description: Detects execution of commands used by ALPHV/BlackCat ransomware to delete virtual machines, snapshots, Windows event logs, and shadow copies. These actions are performed to hinder recovery and destroy evidence.
+references:
+    - https://www.varonis.com/blog/blackcat-ransomware
+author: Tyler Casey, SCYTHE
+date: 2024-01-03
+tags:
+    - attack.t1485
+    - attack.t1490
+    - attack.t1070.001
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection:
+        CommandLine|contains:
+            - 'esxcli vm process kill --type=force'
+            - 'vim-cmd vmsvc/snapshot.removeall'
+            - 'vssadmin.exe delete shadows'
+            - 'wevtutil.exe cl'
+    condition: selection
+falsepositives:
+    - Legitimate VM management operations
+    - Scheduled shadow copy cleanup
+level: high

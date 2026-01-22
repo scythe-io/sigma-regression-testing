@@ -1,0 +1,31 @@
+title: Process Execution from Suspicious User-Writable Directory
+id: 930095d6-4e7b-40e9-be55-99f8e1a8bdc9
+status: experimental
+description: Detects process execution from user-writable directories commonly abused by malware (Downloads, TEMP, AppData\Local, Public). Adversaries often stage and execute payloads from these locations to avoid detection.
+references:
+    - https://support.scythe.io/knowledge/sharpdragon
+author: Tyler Casey, SCYTHE
+date: 2024-07-08
+tags:
+    - attack.t1059
+    - attack.t1036
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection:
+        - Image|contains:
+            - '\Downloads\'
+            - '\Temp\'
+            - '\AppData\Local\Temp\'
+            - '\Public\'
+        - ParentImage|contains:
+            - '\Downloads\'
+            - '\Temp\'
+            - '\AppData\Local\Temp\'
+            - '\Public\'
+    condition: selection
+falsepositives:
+    - Legitimate software installers running from Downloads
+    - Temporary file extraction during installation
+level: low

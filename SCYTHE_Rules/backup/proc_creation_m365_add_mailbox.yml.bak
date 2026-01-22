@@ -1,0 +1,27 @@
+title: Suspicious Mailbox Permission Delegation
+id: 4c7f11a8-1d47-4ced-bce1-e88233f33337
+status: experimental
+description: Detects "add-mailboxpermission" cmdlet that is utilized to delegate mailbox permission authorities to a M365 account.
+references:
+    -   https://support.scythe.io/knowledge/m365
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/27
+tags:
+    - attack.persistence
+    - attack.1098.002
+logsource:
+    product: windows
+    category: proc_creation
+detection:
+    selection:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\powershell_ise.exe'
+            - '\cmd.exe'
+        CommandLine|contains: 
+            - 'add-mailboxpermission'
+    condition: selection
+falsepositives:
+    - Normal mailbox permissions assigned to user.
+level: 
+    - medium

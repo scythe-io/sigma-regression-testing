@@ -1,0 +1,32 @@
+title: Linux Discovery Commands from Non-Shell Parent Process
+id: bee3c1ea-8508-48b8-b641-cffbefd45e3d
+status: experimental
+description: Detects execution of Linux discovery commands (ip, ss, hostname) by processes whose parent is not a standard interactive shell (bash, sh, zsh). This may indicate automated reconnaissance by malware or scripts rather than interactive user activity.
+references:
+    - https://unit42.paloaltonetworks.com/new-linux-variant-bifrost-malware/
+author: Tyler Casey, SCYTHE
+date: 2024-03-18
+tags:
+    - attack.discovery
+    - attack.t1082
+    - attack.t1016
+logsource:
+    product: linux
+    category: process_creation
+detection:
+    selection_cmdline:
+        CommandLine|contains:
+            - 'ip '
+            - 'ss '
+            - 'hostname'
+    filter_main_shells:
+        ParentImage|endswith:
+            - '/bash'
+            - '/sh'
+            - '/zsh'
+    condition: selection_cmdline and not filter_main_shells
+falsepositives:
+    - Legitimate automation scripts
+    - Configuration management tools
+    - Monitoring agents
+level: low

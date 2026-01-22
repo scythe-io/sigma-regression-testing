@@ -1,0 +1,30 @@
+title: Run Key Registry Modification via PowerShell Set-ItemProperty
+id: 44fec743-072b-425f-ab1e-1a8549c153de
+status: experimental
+description: Detects PowerShell Set-ItemProperty or Set-Item cmdlets modifying Windows Run or RunOnce registry keys. Adversaries commonly abuse these registry keys to establish persistence by executing malware on user logon.
+references:
+    - https://support.scythe.io/knowledge/sharpdragon
+author: Tyler Casey, SCYTHE
+date: 2024-07-08
+tags:
+    - attack.persistence
+    - attack.t1547.001
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_shell:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+    selection_cmdlet:
+        CommandLine|contains:
+            - 'Set-ItemProperty'
+            - 'Set-Item'
+    selection_runkey:
+        CommandLine|contains: '\Software\Microsoft\Windows\CurrentVersion\Run'
+    condition: all of selection_*
+falsepositives:
+    - Legitimate software installation via PowerShell
+    - Administrative scripts configuring startup programs
+level: medium

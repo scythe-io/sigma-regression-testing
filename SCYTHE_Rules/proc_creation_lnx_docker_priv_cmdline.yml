@@ -1,0 +1,24 @@
+title: Docker Container Started with Privileged Flag
+id: 418d86a9-45a1-474a-b86e-7f22fe5f020b
+status: experimental
+description: Detects Docker containers started with the --privileged flag. Privileged containers have full access to the host system and can be used by adversaries to escape container isolation, access host filesystems, or perform kernel-level attacks.
+references:
+    - https://support.scythe.io/knowledge/malicious-docker-container
+author: Tyler Casey, SCYTHE
+date: 2024-09-04
+tags:
+    - attack.t1611
+    - attack.t1610
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection_docker:
+        Image|endswith: '/docker'
+    selection_privileged:
+        CommandLine|contains: '--privileged'
+    condition: all of selection_*
+falsepositives:
+    - Legitimate use of privileged containers for system administration
+    - Development and testing environments
+level: high

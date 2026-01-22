@@ -1,0 +1,30 @@
+title: Registry Modifications Related to LockBitv3 Ransomware
+id: cbb30fd3-b91a-4814-b79a-55e020393203
+status: experimental
+description: Detects modifying registry keys to enable smart screen, allow auto logon, and disable Windows Event Logging.
+references:
+ - https://www.cisa.gov/news-events/cybersecurity-advisories/aa22-181a
+ - https://www.picussecurity.com/resource/medusalocker-ransomware-analysis-simulation-and-mitigation
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2023/12/21
+tags:
+  - attack.T1547
+  - attack.T1059
+logsource:
+ product: windows
+ service: sysmon
+detection:
+ selection_base:
+   EventID: 13
+ selection1:
+   TargetObject|contains:
+     - '*\Software\Microsoft\Windows\CurrentVersion\Run\MSFEEditor*'
+   Details: '*.exe'
+ selection2:
+   TargetObject|contains:
+     - '*\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\EnabledLinkConnections'
+   Details: '1'
+ condition: selection_base and (selection1 or selection2)
+falsepositives:
+ - Legitimate system administration tasks may use similar commands.
+level: high

@@ -1,0 +1,27 @@
+title: Network Connection by Command-Line File Transfer Utility
+id: 97d19e97-d09a-49e6-9420-311881cfb316
+status: experimental
+description: Detects network connections initiated by command-line file transfer utilities (wget, curl, scp, aria2c, rclone). While these tools have legitimate uses, adversaries commonly leverage them for downloading malicious payloads or exfiltrating data.
+references:
+    - https://support.scythe.io/knowledge/cloudfox-v2
+author: Tyler Casey, SCYTHE
+date: 2024-06-28
+tags:
+    - attack.t1105
+logsource:
+    product: linux
+    category: network_connection
+detection:
+    selection:
+        Image|endswith:
+            - '/wget'
+            - '/curl'
+            - '/scp'
+            - '/aria2c'
+            - '/rclone'
+    condition: selection
+falsepositives:
+    - Legitimate file downloads or transfers by administrators
+    - Package manager operations
+    - Automated backup scripts
+level: low

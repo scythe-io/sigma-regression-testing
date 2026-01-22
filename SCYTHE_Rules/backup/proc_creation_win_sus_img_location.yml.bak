@@ -1,0 +1,31 @@
+title: Suspicious Process Creation Location
+id: 930095d6-4e7b-40e9-be55-99f8e1a8bdc9
+status: experimental
+description: Detects a process being created from suspicious or uncommon directories.
+references:
+    - https://support.scythe.io/knowledge/sharpdragon
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024-07-08
+tags:
+    - attack.execution
+    - attack.t1059.001
+logsource:
+    product: windows
+    category: proc_creation
+detection:
+    selection_img_filepath:
+        Image|contains:
+            - '\Downloads\'
+            - '\TEMP\'
+            - '\AppData\Local\'
+            - '\Public\'
+    selection_parent_img_sus:
+        ParentImage|contains:
+            - '\Downloads\'
+            - '\TEMP\'
+            - '\AppData\Local\'
+            - '\Public\'
+    condition: selection_img_filepath or selection_parent_img_sus
+falsepositives:
+    - Legitimate process creation
+level: medium

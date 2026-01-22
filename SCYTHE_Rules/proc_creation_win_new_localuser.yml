@@ -1,0 +1,25 @@
+title: Local User Account Creation via New-LocalUser PowerShell Cmdlet
+id: 88c38101-0568-44bd-89b0-5b6d20edb8e7
+status: experimental
+description: Detects execution of the New-LocalUser PowerShell cmdlet used to create local user accounts. Adversaries may create rogue local accounts for persistence or to avoid detection by blending in with legitimate users.
+references:
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-353a
+author: Tyler Casey, SCYTHE
+date: 2024-03-28
+tags:
+    - attack.persistence
+    - attack.t1136.001
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_powershell:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+    selection_cmdlet:
+        CommandLine|contains: 'New-LocalUser'
+    condition: all of selection_*
+falsepositives:
+    - Legitimate user account creation by administrators
+level: medium

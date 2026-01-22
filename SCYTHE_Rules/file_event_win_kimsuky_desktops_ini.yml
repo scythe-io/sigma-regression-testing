@@ -1,0 +1,21 @@
+title: Kimsuky Keylogger Desktops.ini File Creation
+id: 31c7b1f5-3c88-4b19-8a5e-937c27c40158
+status: experimental
+description: Detects file operations involving desktops.ini files, which are used by Kimsuky threat actor's keylogger malware to store captured keystrokes. This file name is intentionally similar to the legitimate desktop.ini but includes an extra 's'.
+references:
+    - https://www.trendmicro.com/vinfo/us/threat-encyclopedia/malware/trojanspy.win32.fpspy.thicobd
+author: Jarrad Pemberton, SCYTHE
+date: 2025-06-26
+tags:
+    - attack.collection
+    - attack.t1056.001
+logsource:
+    product: windows
+    category: file_event
+detection:
+    selection:
+        TargetFilename|contains: 'desktops.ini'
+    condition: selection
+falsepositives:
+    - Unknown
+level: high

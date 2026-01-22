@@ -1,0 +1,21 @@
+title: LockBit 3.0 Ransomware File Extension Creation
+id: 1bf34273-75c8-46bf-99ce-3f3fb6be4688
+status: experimental
+description: Detects creation of files with the .HLJkNskOq extension characteristic of LockBit 3.0 ransomware encrypted files. Detection of multiple such files in a short timeframe indicates active ransomware encryption.
+references:
+    - https://www.trendmicro.com/en_th/research/22/g/lockbit-ransomware-group-augments-its-latest-variant--lockbit-3-.html
+author: Tyler Casey, SCYTHE
+date: 2024-01-16
+tags:
+    - attack.impact
+    - attack.t1486
+logsource:
+    product: windows
+    category: file_event
+detection:
+    selection:
+        TargetFilename|endswith: '.HLJkNskOq'
+    condition: selection
+falsepositives:
+    - Unlikely
+level: critical

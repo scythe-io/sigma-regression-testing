@@ -1,0 +1,26 @@
+title: CMDLine Download via Specific DNS
+id: 01d1faae-daa5-48c6-9abd-1af30d7d7862
+status: experimental
+description: Detects cmdline utilities (wget and curl), set to specific DNS servers.  This is pertinent as Bifrost malware has been observed utilizing a specific DNS Server to download it's payloads.
+references:
+    -  https://unit42.paloaltonetworks.com/new-linux-variant-bifrost-malware/
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/18
+tags:
+    - attack.execution
+    - attack.1059.004
+logsource:
+    product: linux
+    category: process_creation
+detection:
+    selection_cmdline:
+        CommandLine|contains:
+            - '--dns-servers'
+    selection_image:
+        Image|contains: #modify to include other commandline utilites installed
+            - '/bin/curl'
+            - '/bin/wget'
+    condition: all of selection_*
+falsepositives:
+    - Administrators utilize these commands for regular work duties. 
+level: low

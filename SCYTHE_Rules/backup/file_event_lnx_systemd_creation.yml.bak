@@ -1,0 +1,21 @@
+title: System Service Creation
+id: b1aa3509-82c0-423c-ac80-262a25b0e0f4
+status: experimental
+description: Detects file creation in /etc/systemd/system.  This could be indicative of an adversary creating a service as a persistence mechanism.
+references:
+    - https://support.scythe.io/knowledge/systemd-persistence
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/06/28
+tags:
+    - attack.persistence
+    - attack.t1543.002
+logsource:
+    category: file_event
+    product: linux
+detection:
+    selection:
+        file_path|startswith: '/etc/systemd/system'
+    condition: selection
+falsepositives:
+    - Legitimate service being created.
+level: low

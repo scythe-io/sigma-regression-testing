@@ -1,0 +1,28 @@
+title: Service Creation
+id: a9fbf537-0646-483f-a9d8-8d94f65abb26
+status: experimental
+description: Detects service modification via Set Value in "\System\CurrentControlSet\Services\". This detection is pertinent if service creation occurred in memory and command-line arguments were not logged.
+references:
+  - https://support.scythe.io/knowledge/march-2024-ioc-applejeus
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024-03-13
+tags:
+  - attack.persistence
+  - attack.t1050
+logsource:
+  product: windows
+  category: registry_set
+detection:
+  selection_img:
+    Image|endswith:
+      - '\services.exe'
+  selection_targetobj:
+    TargetObject|contains:
+      - '\System\CurrentControlSet\Services\'
+  selection_allowlist: # Add known good services here to reduce FP
+    TargetObject|contains: 
+      - '\System\CurrentControlSet\Services\WinDefend'
+  condition: selection_img and selection_targetobj and not selection_allowlist
+falsepositives:
+  - Legitimate administrator or user creates a service for legitimate reasons. Add known good services to selection_allowlist to be excluded.
+level: medium

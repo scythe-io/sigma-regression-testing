@@ -1,0 +1,23 @@
+title: Bifrost Malware Hash
+id: d4010879-3241-4c77-8d18-f4f679b437ab
+status: experimental
+description: Detects Bifrost malware SHA256 hash from a created process.
+references:
+    -  https://unit42.paloaltonetworks.com/new-linux-variant-bifrost-malware/
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/18
+tags:
+    - attack.execution
+    - attack.t1059.004
+    - attack.t1204.002
+logsource:
+    product: linux
+    category: process_creation
+detection:
+    selection_hash:
+        Hashes:
+            - 'SHA256=8e85cb6f2215999dc6823ea3982ff4376c2cbea53286e95ed00250a4a2fe4729'
+    condition: selection_hash
+falsepositives:
+    - Unknown 
+level: high

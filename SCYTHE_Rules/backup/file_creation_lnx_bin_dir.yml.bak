@@ -1,0 +1,25 @@
+title: File Creation in Bin Directories
+id: 02b2514b-46d8-45ab-b7a2-173ba4e8af48
+status: experimental
+description: Detects when a file is created in /bin/ or /sbin/ directories. This is indicative of a new binary or program being installed on the system.
+references:
+    - https://support.scythe.io/knowledge/empower-logrotate
+    - https://tldp.org/LDP/Linux-Filesystem-Hierarchy/html/bin.html
+    - https://tldp.org/LDP/Linux-Filesystem-Hierarchy/html/sbin.html
+tags:
+    - attack.execution
+    - attack.t1059.004
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/10/03
+logsource:
+    category: file_event
+    product: linux
+detection:
+    selection:
+        TargetFilename|startswith:
+            - '/usr/bin/'
+            - '/usr/sbin/'
+    condition: selection
+falsepositives:
+    - Legitimate binaries or programs being installed on system.
+level: low

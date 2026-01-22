@@ -1,0 +1,22 @@
+title: SPICA C2 Network Connections
+id: b0ef7d3e-85cf-4d26-8640-06e34ab4715d
+status: experimental
+description: Detects network connections to identified SPICA C2.
+references:
+    - https://support.scythe.io/knowledge/empower-threat-feb2024-coldriver-spica
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/02/27
+tags:
+    - attack.command_and_control
+    - attack.T1071.001
+logsource:
+    product: windows
+    category: network
+detection:
+    selection:
+        DestinationIp:
+        - '45.133.216.15'
+    condition: selection
+falsepositives:
+    - Legitimate user internet browsing
+level: high

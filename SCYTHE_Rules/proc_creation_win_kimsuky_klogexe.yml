@@ -1,0 +1,28 @@
+title: Kimsuky Keylogger Process Execution
+id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+status: experimental
+description: Detects execution of klogexe.exe, a keylogger associated with the Kimsuky threat actor. This malware captures keystrokes and stores them in desktops.ini files within APPDATA paths.
+references:
+    - https://www.trendmicro.com/vinfo/us/threat-encyclopedia/malware/trojanspy.win32.fpspy.thicobd
+author: Jarrad Pemberton, SCYTHE
+date: 2025-06-26
+tags:
+    - attack.t1056.001
+    - attack.t1005
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        - Image|endswith: '\klogexe.exe'
+        - OriginalFileName: 'klogexe.exe'
+        - CommandLine|contains: 'klogexe'
+    filter_main_legitimate:
+        Image|endswith:
+            - '\explorer.exe'
+            - '\winlogon.exe'
+            - '\dwm.exe'
+    condition: selection and not filter_main_legitimate
+falsepositives:
+    - Unknown
+level: critical

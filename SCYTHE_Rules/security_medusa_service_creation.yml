@@ -1,0 +1,27 @@
+title: Medusa Ransomware Scheduled Task Creation
+id: c0f0ad54-e4ef-4456-aa2c-9ba8384d43f7
+status: experimental
+description: Detects scheduled task creation (Event ID 4698) with task content referencing Medusa ransomware indicators. Medusa uses scheduled tasks with svhost.exe or svhostt.exe in the Roaming directory for persistence.
+references:
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa22-181a
+author: Tyler Casey, SCYTHE
+date: 2023-12-29
+tags:
+    - attack.persistence
+    - attack.t1053.005
+    - attack.impact
+    - attack.t1486
+logsource:
+    product: windows
+    service: security
+detection:
+    selection_event:
+        EventID: 4698
+    selection_content:
+        TaskContent|contains:
+            - '\AppData\Roaming\svhost.exe'
+            - '\AppData\Roaming\svhostt.exe'
+    condition: all of selection_*
+falsepositives:
+    - Unlikely
+level: critical

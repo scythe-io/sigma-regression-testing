@@ -1,0 +1,22 @@
+title: File Event for Authorized Keys
+id: cea25325-8b81-48ad-bd42-2a8968035cf2
+status: experimental
+description: Detects file creations, deletions, or modifications to authorized_keys.  Authorized_keys file is responsible for hosting SSH authorized keys, any unexpected modifications should be investigated.
+references:
+    -  https://support.scythe.io/knowledge/azure-resource-group-backdoor 
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/28
+tags:
+    - attack.persistence
+    - attack.t1098.004
+logsource:
+    product: linux
+    category: file_event
+detection:
+    selection:
+        file_name|contains:
+            - 'authorized_keys'
+    condition: selection
+falsepositives:
+    - Administrators adding new authorized keys for legitimate purposes.
+level: high

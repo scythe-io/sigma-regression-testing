@@ -1,0 +1,28 @@
+title:  SharePoint File Deletion
+id: 8cf34e39-13f1-43c9-a7fc-5acc1a0ee706
+status: experimental
+description:    Detects file deletions from SharePoint in Microsoft 365 audit logs.
+references:
+    - https://support.scythe.io/knowledge/m365-sharepoint-document-spray
+author: Tyler Casey @1qazCasey, @scythe_io
+date:   2024/04/29
+tags:
+    - attack.execution
+    - attack.t1059.009
+    - attack.defense_evasion
+    - attack.t1070.004
+logsource:
+    category: audit
+    product: m365
+detection:
+    selection_upload:
+        Operation|contains:
+            - 'FileDeleted'
+            - 'Deleted File'
+    selection_workload:
+        Workload|contains:
+            - 'SharePoint'
+    condition: all of selection_*
+falsepositives:
+    - Legitimate file deletions
+level: medium

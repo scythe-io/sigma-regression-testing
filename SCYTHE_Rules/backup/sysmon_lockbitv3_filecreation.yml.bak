@@ -1,0 +1,24 @@
+title: Mass File Creation IRT LockBit 3.0 
+id: 1bf34273-75c8-46bf-99ce-3f3fb6be4688
+description: Detects when more than 25 files are created with a .HLJkNskOq file extension within a 10 second window, indicative of LockBit 3.0 Ransomware.
+status: experimental
+references:
+    - https://www.trendmicro.com/en_th/research/22/g/lockbit-ransomware-group-augments-its-latest-variant--lockbit-3-.html
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/01/16
+tags:
+  - attack.TA0040
+  - attack.T1486
+logsource:
+    category: windows
+    product: sysmon
+detection:
+    selection:
+     EventID: 11
+     TargetFilename|endswith:
+      - '.HLJkNskOq'
+    timeframe: 10s
+    condition: selection | count() by TargetFilename > 25
+falsepositives:
+    - Legitimate software creating files with same extension as LockBit 3.0 Ransomware.
+level: high

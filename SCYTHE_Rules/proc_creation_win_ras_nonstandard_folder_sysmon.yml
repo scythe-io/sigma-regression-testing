@@ -1,0 +1,46 @@
+title: Remote Access Software Execution from Non-Standard Directory - Sysmon
+id: 18145bec-4354-48ff-9446-55a8e306e53d
+related:
+    - id: 065b00ca-5d5c-4557-ac95-64a6d0b64d86
+      type: similar
+    - id: 18145bec-4354-48ff-9446-55a8e306e53c
+      type: derived
+status: test
+description: Detects execution of remote access software (AnyDesk, TeamViewer, ScreenConnect) from non-standard directories via Sysmon Event ID 1. Scattered Spider and other threat actors deploy portable RAS tools to non-standard locations.
+references:
+    - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1219/T1219.md
+author: Tyler Casey, SCYTHE
+date: 2024-01-31
+tags:
+    - attack.t1219
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_event:
+        EventID: 1
+    selection_anydesk:
+        Image|endswith: '\AnyDesk.exe'
+    filter_anydesk:
+        Image|contains:
+            - '\AppData\'
+            - '\Program Files (x86)\AnyDesk'
+            - '\Program Files\AnyDesk'
+    selection_teamviewer:
+        Image|endswith: '\TeamViewer.exe'
+    filter_teamviewer:
+        Image|contains:
+            - '\AppData\'
+            - '\Program Files (x86)\TeamViewer'
+            - '\Program Files\TeamViewer'
+    selection_screenconnect:
+        Image|endswith: '\ScreenConnect.exe'
+    filter_screenconnect:
+        Image|contains:
+            - '\AppData\'
+            - '\Program Files (x86)\ScreenConnect'
+            - '\Program Files\ScreenConnect'
+    condition: selection_event and ((selection_anydesk and not filter_anydesk) or (selection_teamviewer and not filter_teamviewer) or (selection_screenconnect and not filter_screenconnect))
+falsepositives:
+    - Portable RAS software used legitimately
+level: high

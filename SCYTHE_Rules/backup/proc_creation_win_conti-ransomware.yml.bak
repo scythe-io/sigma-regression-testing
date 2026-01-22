@@ -1,0 +1,29 @@
+title: Conti Discovery Commands
+id: 384d2e63-ff68-43d9-a332-0d3f80d12e58
+status: experimental
+description: Detects discovery commands commonly associated with Conti Ransomware.
+id: 384d2e63-ff68-43d9-a332-0d3f80d12e58
+references:
+    - https://support.scythe.io/knowledge/conti-ransomware
+    - https://thedfirreport.com/2021/05/12/conti-ransomware/
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/02/09
+tags:
+    - attack.discovery
+    - attack.t1016
+    - attack.t1082
+    - attack.t1016
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection:
+        CommandLine|contains:
+            - 'ipconfig /all'
+            - 'systeminfo'
+            - 'whoami'
+            - 'net'
+    condition: selection
+falsepositives:
+    - Administrators may utilize these commands as part of system administration.  
+level: low

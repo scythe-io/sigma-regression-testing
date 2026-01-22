@@ -1,0 +1,25 @@
+title: LockBit 3.0 Ransomware Deletion Commands
+id: 1a6dc271-1862-43ce-888d-058c47b1a113
+status: experimental
+description: Detects execution of commands used by LockBit 3.0 ransomware to delete shadow copies and clear Windows event logs. These actions are performed to prevent system recovery and destroy forensic evidence.
+references:
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-075a
+author: Tyler Casey, SCYTHE
+date: 2024-01-16
+tags:
+    - attack.t1490
+    - attack.t1070.001
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection:
+        CommandLine|contains:
+            - 'vssadmin.exe delete shadows'
+            - 'wevtutil.exe cl'
+            - 'wmic.exe Shadowcopy Delete'
+    condition: selection
+falsepositives:
+    - Legitimate shadow copy management
+    - Log maintenance by administrators
+level: high

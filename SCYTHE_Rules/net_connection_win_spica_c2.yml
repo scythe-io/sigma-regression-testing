@@ -1,0 +1,20 @@
+title: SPICA Backdoor C2 Network Connection
+id: b0ef7d3e-85cf-4d26-8640-06e34ab4715d
+status: experimental
+description: Detects network connections to known SPICA backdoor command-and-control IP addresses. SPICA is associated with Cold River (Star Blizzard) threat actor campaigns targeting government and defense sectors.
+references:
+    - https://support.scythe.io/knowledge/empower-threat-feb2024-coldriver-spica
+author: Tyler Casey, SCYTHE
+date: 2024-02-27
+tags:
+    - attack.t1071.001
+logsource:
+    product: windows
+    category: network_connection
+detection:
+    selection:
+        DestinationIp: '45.133.216.15'
+    condition: selection
+falsepositives:
+    - Unlikely
+level: critical

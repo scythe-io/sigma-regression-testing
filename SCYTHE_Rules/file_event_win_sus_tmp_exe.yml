@@ -1,0 +1,39 @@
+title: Suspicious Executable File Creation in User AppData Directory
+id: b0bb40b3-d9c7-48e7-8172-0e7e59d09366
+status: experimental
+description: Detects creation of executable files (EXE, PS1, BAT, MSI, PY, WSF, COM, VBS) in the AppData\Local directory by processes not originating from Program Files. This technique is utilized by StopCrypt ransomware for staging malicious payloads.
+references:
+    - https://blog.sonicwall.com/en-us/2024/03/new-multi-stage-stopcrypt-ransomware/
+author: Tyler Casey, SCYTHE
+date: 2024-04-04
+tags:
+    - attack.persistence
+    - attack.t1547.001
+    - attack.t1036
+logsource:
+    product: windows
+    category: file_event
+detection:
+    selection_path:
+        TargetFilename|contains: '\AppData\Local\'
+    selection_extension:
+        TargetFilename|endswith:
+            - '.exe'
+            - '.ps1'
+            - '.bat'
+            - '.msi'
+            - '.py'
+            - '.wsf'
+            - '.com'
+            - '.vbs'
+    filter_main_program_files:
+        Image|contains:
+            - '\Program Files\'
+            - '\Program Files (x86)\'
+    filter_optional_pspolicytest:
+        TargetFilename|contains: 'PSScriptPolicyTest'
+    condition: selection_path and selection_extension and not filter_main_program_files and not filter_optional_pspolicytest
+falsepositives:
+    - Legitimate application installers writing to AppData
+    - User-installed portable applications
+level: high

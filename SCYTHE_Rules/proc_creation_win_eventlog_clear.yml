@@ -1,0 +1,29 @@
+title: Windows Event Log Cleared via PowerShell Cmdlet
+id: 27b5f8bc-38ab-4958-8db5-4ed303ca90b4
+related:
+    - id: 0f017df3-8f5a-414f-ad6b-24aff1128278
+      type: derived
+status: experimental
+description: Detects execution of PowerShell cmdlets used to clear or remove Windows event logs (Clear-EventLog, Remove-EventLog, Limit-EventLog, Clear-WinEvent). Adversaries commonly clear logs to remove evidence of their activities.
+references:
+    - https://twitter.com/oroneequalsone/status/1568432028361830402
+    - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1070.001/T1070.001.md
+    - https://eqllib.readthedocs.io/en/latest/analytics/5b223758-07d6-4100-9e11-238cfdd0fe97.html
+author: Tyler Casey, SCYTHE
+date: 2024-04-24
+tags:
+    - attack.t1070.001
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection:
+        CommandLine|contains:
+            - 'Clear-EventLog'
+            - 'Remove-EventLog'
+            - 'Limit-EventLog'
+            - 'Clear-WinEvent'
+    condition: selection
+falsepositives:
+    - Legitimate log maintenance by administrators
+level: high

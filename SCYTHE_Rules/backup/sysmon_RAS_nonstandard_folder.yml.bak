@@ -1,0 +1,49 @@
+title: Remote Access Software (RAS) Executed from Non-standard Directories
+id: 18145bec-4354-48ff-9446-55a8e306e53c
+related:
+    - id: 065b00ca-5d5c-4557-ac95-64a6d0b64d86
+      type: similar
+status: test
+description:
+    - Detects RAS that is being executed in non-standard directories.  This rule specifically detects AnyDesk, TeamViewer, and ScreenConnect; these are most commonly utilized by the Scattered Spider cybercriminal group.
+references:
+    - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1219/T1219.md#atomic-test-1---teamviewer-files-detected-test-on-windows
+    - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1219/T1219.md#atomic-test-2---anydesk-files-detected-test-on-windows
+    - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1219/T1219.md#atomic-test-5---screenconnect-application-download-and-install-on-windows
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024-01-31
+tags:
+    - attack.TA0011
+    - attack.TA0002
+    - attack.T1219
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection_base:
+        EventID: 1
+    selection1:
+        - Image|endswith: '\AnyDesk.exe'
+    selection1_filter:
+        Image|contains:
+            - '\AppData\'
+            - 'Program Files (x86)\AnyDesk'
+            - 'Program Files\AnyDesk'
+    selection2:
+        - Image|endswith: '\Teamviewer.exe'
+    selection2_filter:
+        Image|contains:
+            - '\AppData\'
+            - 'Program Files(x86)\TeamViewer'
+            - 'Program Files\TeamViewer'
+    selection3:
+        - Image|endswith: '\ScreenConnect.exe'
+    selection3_filter:
+        Image|contains:
+            - '\AppData\'
+            - 'Program Files(x86)\ScreenConnect'
+            - 'Program Files\ScreenConnect'
+    condition: selection_base AND ((selection1 and not selection1_filter) OR (selection2 and not selection2_filter) OR (selection3 and not selection3_filter))
+falsepositives:
+    - Legitimate use of RAT software from a non-standard folder
+level: high

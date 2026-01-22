@@ -1,0 +1,26 @@
+title: Service Registry Modification via Services.exe
+id: a9fbf537-0646-483f-a9d8-8d94f65abb26
+status: experimental
+description: Detects registry modifications to the Services registry key by services.exe. This detection is useful when service creation occurs in memory and command-line arguments are not logged, capturing the registry-level evidence of service installation.
+references:
+    - https://support.scythe.io/knowledge/march-2024-ioc-applejeus
+author: Tyler Casey, SCYTHE
+date: 2024-03-13
+tags:
+    - attack.persistence
+    - attack.t1543.003
+logsource:
+    product: windows
+    category: registry_set
+detection:
+    selection_image:
+        Image|endswith: '\services.exe'
+    selection_target:
+        TargetObject|contains: '\System\CurrentControlSet\Services\'
+    filter_main_windefend:
+        TargetObject|contains: '\Services\WinDefend'
+    condition: selection_image and selection_target and not filter_main_windefend
+falsepositives:
+    - Legitimate service installation
+    - Windows Update installing services
+level: medium

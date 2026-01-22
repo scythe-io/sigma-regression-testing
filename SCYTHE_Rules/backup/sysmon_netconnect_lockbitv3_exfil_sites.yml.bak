@@ -1,0 +1,29 @@
+title: Network Connections to LockBitv3 File Sharing Sites
+status: experimental
+id: 6db8e955-2731-42ff-9b8f-4eb87834ed88
+description: Detects network connections to LockBitv3 File Sharing Sites via Sysmon EventID 3.
+references:
+  - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-075a
+  - https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventid=90003
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2023/12/22
+tags:
+  - attack.TA0011
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    EventID: 3 
+    DestinationHostname|contains:
+    - 'hanproud.com'
+    - 'premiumize.com'
+    - 'anonfiles.com'
+    - 'sendspace.com'
+    - 'fex.net' 
+    - 'transfer.sh'
+    - 'send.exploit.in'
+  condition: selection
+falsepositives:
+  - Unusual user behavior
+level: medium

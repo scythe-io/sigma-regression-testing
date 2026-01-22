@@ -1,0 +1,26 @@
+title: Medusa Ransomware Registry Modifications
+id: cbb30fd3-b91a-4814-b79a-55e020393203
+status: experimental
+description: Detects registry modifications associated with Medusa ransomware including Run key persistence with MSFEEditor and enabling linked network drive connections. These registry changes are used for persistence and lateral movement.
+references:
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa22-181a
+    - https://www.picussecurity.com/resource/medusalocker-ransomware-analysis-simulation-and-mitigation
+author: Tyler Casey, SCYTHE
+date: 2023-12-21
+tags:
+    - attack.t1547.001
+    - attack.t1112
+logsource:
+    product: windows
+    category: registry_set
+detection:
+    selection_runkey:
+        TargetObject|contains: '\Software\Microsoft\Windows\CurrentVersion\Run\MSFEEditor'
+        Details|endswith: '.exe'
+    selection_linkconnections:
+        TargetObject|contains: '\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\EnabledLinkConnections'
+        Details: 'DWORD (0x00000001)'
+    condition: 1 of selection_*
+falsepositives:
+    - Unlikely
+level: high

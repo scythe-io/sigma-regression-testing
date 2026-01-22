@@ -1,0 +1,27 @@
+title: Scheduled Task File Creation in Tasks Directory
+id: a6aa453c-d4a9-431d-be9d-a537cfede03f
+status: experimental
+description: Detects file creation events in Windows scheduled task directories (Windows\Tasks, Windows\System32\Tasks, Windows\SysWOW64\Tasks). Adversaries commonly abuse scheduled tasks for persistence by creating task definition files in these locations.
+references:
+    - https://support.scythe.io/knowledge/empower-threat-feb2024-coldriver-spica
+author: Tyler Casey, SCYTHE
+date: 2024-02-28
+tags:
+    - attack.persistence
+    - attack.t1053.005
+logsource:
+    product: windows
+    category: file_event
+detection:
+    selection_dir:
+        TargetFilename|contains:
+            - '\Windows\Tasks\'
+            - '\Windows\System32\Tasks\'
+            - '\Windows\SysWOW64\Tasks\'
+    filter_main_microsoft:
+        TargetFilename|contains: '\Windows\System32\Tasks\Microsoft\'
+    condition: selection_dir and not filter_main_microsoft
+falsepositives:
+    - Administrators creating scheduled tasks for system administration
+    - Legitimate software installers creating scheduled tasks
+level: medium

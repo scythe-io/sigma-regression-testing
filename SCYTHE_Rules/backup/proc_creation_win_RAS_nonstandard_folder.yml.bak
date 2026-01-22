@@ -1,0 +1,35 @@
+title: Remote Access Software (RAS) Executed from Non-standard Directories
+id: 18145bec-4354-48ff-9446-55a8e306e53c
+related:
+    - id: 065b00ca-5d5c-4557-ac95-64a6d0b64d86
+      type: similar
+status: experimental
+description: Detects RAS that is being executed in non-standard directories.  This rule specifically detects AnyDesk, TeamViewer, and ScreenConnect; these are most commonly utilized by the ALPHV cybercriminal group.
+references:
+    - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1219/T1219.md#atomic-test-1---teamviewer-files-detected-test-on-windows
+    - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1219/T1219.md#atomic-test-2---anydesk-files-detected-test-on-windows
+    - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1219/T1219.md#atomic-test-5---screenconnect-application-download-and-install-on-windows
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/01/31
+tags:
+    - attack.TA0011
+    - attack.TA0002
+    - attack.T1219
+logsource:
+    product: windows
+    category: proc_creation
+detection:
+    selection_ras:
+        Image|endswith:
+            - '\AnyDesk.exe'
+            - '\Teamviewer.exe'
+            - '\ScreenConnect.exe'
+    selection_exec_exclude:
+        Image|contains:
+            - '\AppData\'
+            - 'Program Files (x86)\'
+            - 'Program Files\'
+    condition: (selection_ras and not selection_exec_exclude)
+falsepositives:
+    - Legitimate use of RAS software from a non-standard folder
+level: high

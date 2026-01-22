@@ -1,0 +1,34 @@
+title: Suspicious Archive File Creation by Uncommon Process
+id: 756ff96e-6fce-44bc-9998-160951c7bcbf
+status: experimental
+description: Detects archive file creation (ZIP, 7Z, TAR, WIM) by processes other than common archive utilities. This technique is used by threat actors such as Cold River Group (SPICA) and TrueBot malware loader to stage data for exfiltration.
+references:
+    - https://support.scythe.io/knowledge/empower-threat-feb2024-coldriver-spica
+author: Tyler Casey, SCYTHE
+date: 2024-02-28
+tags:
+    - attack.collection
+    - attack.t1560.001
+logsource:
+    product: windows
+    category: file_event
+detection:
+    selection_filename:
+        TargetFilename|endswith:
+            - '.zip'
+            - '.7z'
+            - '.tar'
+            - '.wim'
+    filter_main_archive_tools:
+        Image|endswith:
+            - '\7z.exe'
+            - '\7zg.exe'
+            - '\7zr.exe'
+            - '\7za.exe'
+            - '\explorer.exe'
+            - '\WinRAR.exe'
+    condition: selection_filename and not filter_main_archive_tools
+falsepositives:
+    - Third-party archive utilities not in filter list
+    - Legitimate applications with built-in archive functionality
+level: medium

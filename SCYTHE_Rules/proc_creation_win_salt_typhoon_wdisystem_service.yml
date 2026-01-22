@@ -1,0 +1,24 @@
+title: Salt Typhoon Malicious WdiSystem Service Indicators
+id: 8c4f2a91-3d5e-4f7b-9a2c-1e8d7c6b5a94
+status: test
+description: Detects indicators associated with Salt Typhoon threat actor's malicious WdiSystem service that masquerades as a legitimate Windows Diagnostic service. Detection includes references to WdiSystem, prints1m, and WdiSystemhost strings used by the threat actor.
+references:
+    - https://www.sygnia.co/blog/ghost-emperor-demodex-rootkit/
+author: Jarrad Pemberton, SCYTHE
+date: 2025-01-21
+tags:
+    - attack.t1543.003
+    - attack.t1036.005
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_wdisystem:
+        CommandLine|contains:
+            - 'WdiSystem'
+            - 'prints1m'
+            - 'WdiSystemhost'
+    condition: selection_wdisystem
+falsepositives:
+    - Unlikely
+level: high

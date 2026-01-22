@@ -1,0 +1,30 @@
+title: Chrome Proxy Execution via Command Line Spawned by Shell
+id: 13a288d4-be25-483e-bcad-2707f7f450c5
+related:
+    - id: 4007bc45-1727-405d-a7bc-4b3d441bf08f
+      type: similar
+status: experimental
+description: Detects Google Chrome execution with the --utility-cmd-prefix parameter spawned by command shells. This technique, related to Electron proxy execution, may be abused to execute arbitrary commands through Chrome's utility process.
+references:
+    - https://medium.com/@MalFuzzer/one-electron-to-rule-them-all-dc2e9b263daf
+author: Tyler Casey, SCYTHE
+date: 2024-03-05
+tags:
+    - attack.t1059
+    - attack.t1218
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_parent:
+        ParentImage|endswith:
+            - '\powershell.exe'
+            - '\cmd.exe'
+    selection_chrome:
+        Image|endswith: '\chrome.exe'
+    selection_cmdline:
+        CommandLine|contains: '--utility-cmd-prefix'
+    condition: all of selection_*
+falsepositives:
+    - Unknown
+level: high

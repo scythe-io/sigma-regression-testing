@@ -1,0 +1,22 @@
+title: Bifrost Malware Process Creation by Hash
+id: d4010879-3241-4c77-8d18-f4f679b437ab
+status: experimental
+description: Detects process creation events matching known SHA256 hashes associated with Bifrost malware. Bifrost is a Linux backdoor that provides remote access and data exfiltration capabilities.
+references:
+    - https://unit42.paloaltonetworks.com/new-linux-variant-bifrost-malware/
+author: Tyler Casey, SCYTHE
+date: 2024-03-18
+tags:
+    - attack.execution
+    - attack.t1059.004
+    - attack.t1204.002
+logsource:
+    product: linux
+    category: process_creation
+detection:
+    selection:
+        Hashes|contains: 'SHA256=8e85cb6f2215999dc6823ea3982ff4376c2cbea53286e95ed00250a4a2fe4729'
+    condition: selection
+falsepositives:
+    - Unknown
+level: critical

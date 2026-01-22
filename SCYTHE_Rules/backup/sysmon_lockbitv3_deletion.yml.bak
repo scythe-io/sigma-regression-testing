@@ -1,0 +1,26 @@
+title: Filesystem Deletions related to LockBit 3.0
+id: 1a6dc271-1862-43ce-888d-058c47b1a113
+status: experimental
+description: Detects windows event log, and shadow copy deletion related to LockBit 3.0 Ransonware.
+references:
+  - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-075a
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/01/16
+tags:
+  - attack.T1485
+  - attack.T1490
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    EventID: 1 
+  filter:
+    CommandLine|contains:
+      - 'vssadmin.exe delete shadows'
+      - 'wevtutil.exe cl'
+      - 'wmic.exe Shadowcopy Delete'
+  condition: selection and filter
+falsepositives:
+ - Legitimate system administration tasks may use similar commands.
+level: high

@@ -1,0 +1,23 @@
+title: Manual Logrotate Execution
+id: 57f495c9-d42d-42ce-81ca-3a795870747a
+status: experimental
+description: Detects manual execution of the logrotate command. While logrotate typically runs via cron, explicit execution may indicate an adversary exploiting logrotate misconfigurations to execute malicious binaries with elevated privileges.
+references:
+    - https://support.scythe.io/knowledge/empower-logrotate
+    - https://linux.die.net/man/8/logrotate
+author: Tyler Casey, SCYTHE
+date: 2024-10-03
+tags:
+    - attack.t1059.004
+    - attack.t1053.003
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection:
+        CommandLine|contains: 'logrotate '
+    condition: selection
+falsepositives:
+    - Administrators manually rotating logs
+    - Troubleshooting log rotation issues
+level: low

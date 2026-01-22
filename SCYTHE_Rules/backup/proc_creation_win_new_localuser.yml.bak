@@ -1,0 +1,26 @@
+title: Suspicious Local User Creation
+id: 88c38101-0568-44bd-89b0-5b6d20edb8e7
+status: experimental
+description: Detects creation of local user account via New-LocalUser powershell Commandlet.
+references:
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-353a
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/28
+tags:
+    - attack.defense_evasion
+    - attack.1078.003
+logsource:
+    product: windows
+    service: proc_creation
+detection:
+    selection:
+        Image|endswith:
+            - 'powershell.exe'
+            - 'powershell_ise.exe'
+            - 'cmd.exe'
+        CommandLine|contains:
+            - 'New-LocalUser'
+    condition: selection
+falsepositives:
+    - Normal user creation via powershell New-LocalUser Commandlet.
+level: medium

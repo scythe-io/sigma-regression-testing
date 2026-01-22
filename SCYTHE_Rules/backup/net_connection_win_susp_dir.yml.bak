@@ -1,0 +1,30 @@
+title: Possible File Exfiltration from Non-Standard Directory Over HTTPS
+id: 6c9a1e42-0b8d-4f0a-9e62-3b9c4b8e1a77
+status: experimental
+description: Detects network connections over HTTPS (port 443) initiated by processes not running from Program Files or System32 directories. This may indicate suspicious tools or malware performing command-and-control or exfiltration.
+author: Tyler Casey, SCYTHE
+date: 2026-01-16
+references:
+  - https://attack.mitre.org/techniques/T1041/
+tags:
+  - attack.exfiltration
+  - attack.t1041
+  - attack.command_and_control
+logsource:
+  product: windows
+  category: network_connection
+detection:
+  selection:
+    Initiated: 'true'
+    DestinationPort: 443
+  filter_legit_paths:
+    Image|contains:
+      - '\Program Files\'
+      - '\Program Files (x86)\'
+      - '\System32\'
+  condition: selection and not filter_legit_paths
+falsepositives:
+  - Legitimate software installed in non-standard directories
+  - Portable applications
+  - Enterprise scripts or custom tooling communicating over HTTPS
+level: medium

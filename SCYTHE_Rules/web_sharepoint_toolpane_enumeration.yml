@@ -1,0 +1,35 @@
+title: SharePoint CVE-2025-53770 Target URI Enumeration
+id: a1b2c3d4-e5f6-7890-1234-567890abcdef
+status: experimental
+description: Detects enumeration of SharePoint URIs commonly targeted prior to CVE-2025-53770 exploitation. Detection includes requests to settings.aspx and ToolPane.aspx endpoints, particularly when originating from automated tools or scanning utilities.
+references:
+    - https://nvd.nist.gov/vuln/detail/CVE-2025-53770
+author: Jarrad Pemberton, SCYTHE
+date: 2025-01-24
+tags:
+    - attack.t1595.002
+    - attack.t1083
+    - cve.2025-53770
+logsource:
+    category: webserver
+detection:
+    selection_targets:
+        cs-uri-stem|endswith:
+            - '/_layouts/15/settings.aspx'
+            - '/_layouts/15/ToolPane.aspx'
+    selection_methods:
+        cs-method:
+            - 'HEAD'
+            - 'GET'
+            - 'OPTIONS'
+    selection_automation:
+        cs-User-Agent|contains:
+            - 'curl/'
+            - 'python-requests'
+            - 'Wget/'
+            - 'Mozilla/5.0 (compatible;'
+    condition: selection_targets and (selection_methods or selection_automation)
+falsepositives:
+    - Legitimate SharePoint health monitoring
+    - Authorized administration tools
+level: medium

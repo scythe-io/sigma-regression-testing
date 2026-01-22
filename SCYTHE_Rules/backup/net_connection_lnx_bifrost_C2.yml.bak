@@ -1,0 +1,26 @@
+title: Bifrost C2
+id: 598d9b3d-a532-462b-943e-6f0edbe187e1
+status: experimental 
+description: Detects communication attempts to known Bifrost C2.
+references:
+    -  https://unit42.paloaltonetworks.com/new-linux-variant-bifrost-malware/
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/18
+tags:
+    - attack.command_and_control
+    - attack.t1071.001
+logsource:
+    product: linux
+    category: network_connection
+detection:
+    selection_ip:
+        DestinationIp:
+            - '45.91.82.127'
+            - '168.95.1.1'
+    selection_domain:
+        DestinationHostname|contains:
+            - 'download.vmfare.com'
+    condition: selection_ip or selection_domain
+falsepositives:
+    - Unknown
+level: high

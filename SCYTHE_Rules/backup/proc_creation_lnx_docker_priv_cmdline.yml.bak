@@ -1,0 +1,23 @@
+title: Docker Container Running as Privileged
+id: 418d86a9-45a1-474a-b86e-7f22fe5f020b
+status: experimental
+description: Detects a Docker image that is started with "--privileged" in the commandline. Adversary may use this option to gain elevated permissions, allowing them to bypass security restrictions and fully control the host system.
+references:
+    - https://support.scythe.io/knowledge/malicious-docker-container
+tags:
+    - attack.execution
+    - attack.t1610
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/09/04
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection_docker:
+        CommandLine|contains: 'docker'
+    selection_priv:
+        CommandLine|contains: '--privileged'
+    condition: all of selection_*
+falsepositives:
+    - Legitimate containers being ran with elevated permissions.
+level: medium

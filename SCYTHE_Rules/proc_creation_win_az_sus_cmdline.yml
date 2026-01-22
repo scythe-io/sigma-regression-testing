@@ -1,0 +1,28 @@
+title: Azure CLI Discovery Commands
+id: 2a3a051b-946a-442e-b3ff-def01db439a2
+status: experimental
+description: Detects execution of Azure CLI commands commonly used for cloud infrastructure reconnaissance. Multiple commands in a short period may indicate an adversary enumerating Azure resources after gaining initial access.
+references:
+    - https://support.scythe.io/knowledge/azure-resource-group-backdoor
+author: Tyler Casey, SCYTHE
+date: 2024-03-28
+tags:
+    - attack.discovery
+    - attack.t1580
+    - attack.t1087.004
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection:
+        CommandLine|contains:
+            - 'az vm run-command'
+            - 'az vm show'
+            - 'az network nic'
+            - 'az network nsg'
+            - 'az network public-ip'
+            - 'az vm list'
+    condition: selection
+falsepositives:
+    - Legitimate Azure administration and automation
+level: low

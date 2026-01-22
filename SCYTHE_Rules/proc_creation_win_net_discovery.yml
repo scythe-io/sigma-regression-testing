@@ -1,0 +1,30 @@
+title: Domain Discovery via NET Command
+id: 4b512931-574c-4faf-a579-af1040f6d8db
+status: experimental
+description: Detects execution of net.exe or net1.exe with parameters commonly used for Active Directory enumeration (admins, users, computers, /domain). Adversaries use these commands to gather information about domain accounts and groups.
+references:
+    - https://www.mandiant.com/resources/blog/session-hijacking-citrix-cve-2023-4966
+author: Tyler Casey, SCYTHE
+date: 2024-02-13
+tags:
+    - attack.discovery
+    - attack.t1069.002
+    - attack.t1087.002
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_net:
+        Image|endswith:
+            - '\net.exe'
+            - '\net1.exe'
+    selection_params:
+        CommandLine|contains:
+            - 'admins'
+            - 'users'
+            - 'computers'
+            - '/domain'
+    condition: all of selection_*
+falsepositives:
+    - Legitimate domain administration tasks
+level: medium

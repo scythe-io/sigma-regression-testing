@@ -1,0 +1,24 @@
+title: Docker Container Image Load
+id: 735d6acc-7ed0-4ffb-bb18-c136cf6dd1b8
+status: experimental
+description: Detects the loading of Docker container images via 'docker load' command. Adversaries may load malicious container images to deploy backdoors, cryptominers, or other malware while potentially bypassing traditional endpoint security controls.
+references:
+    - https://support.scythe.io/knowledge/malicious-docker-container
+author: Tyler Casey, SCYTHE
+date: 2024-09-04
+tags:
+    - attack.t1610
+    - attack.t1612
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection_docker:
+        Image|endswith: '/docker'
+    selection_load:
+        CommandLine|contains: ' load '
+    condition: all of selection_*
+falsepositives:
+    - Legitimate container deployment workflows
+    - CI/CD pipelines
+level: medium

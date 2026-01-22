@@ -1,0 +1,33 @@
+title: Notepad++ Spawns CommandLine
+id: 58512062-2366-42b5-83d3-0b3732dbcb7e
+status: experimental
+description: Detects Notepad++ spawning a CommandLine process, this behavior is associated with Pikabot malware.
+references:
+    - https://support.scythe.io/knowledge/empower-1-feb2024-pikabot
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/02/27
+tags:
+    - attack.execution
+    - attack.t1059
+logsource:
+    product: windows
+    service: proc_creation
+detection:
+    selection_parent:
+        - ParentImage|endswith:
+            - '\notepad++.exe'
+        - ParentCommandLine|contains:
+            - 'notepad++.exe'
+    selection_process:
+        - Image|endswith:
+            - '\cmd.exe'
+            - '\powershell.exe'
+        - CommandLine|contains:
+            - 'cmd'
+            - 'powershell'
+        - Image|contains:
+            - '\Windows\System32\' # This should alert on notepad++ attempting to execute LOLBINS, can lead to FP
+    condition: all of selection_*
+falsepositives:
+    - Notepad++ could execute those processes normally if a user is running scripts inside of Notepad++.
+level: high

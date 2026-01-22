@@ -1,0 +1,23 @@
+title: Service Enabled via Systemctl
+id: 7a074483-d40d-4c1a-b98e-f092f9a0015b
+status: experimental
+description: Detects enabling of systemd services via systemctl enable command. Adversaries may enable malicious services to establish persistence, ensuring their payloads execute automatically on system startup.
+references:
+    - https://support.scythe.io/knowledge/systemd-persistence
+author: Tyler Casey, SCYTHE
+date: 2024-06-28
+tags:
+    - attack.persistence
+    - attack.t1543.002
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection:
+        Image|endswith: '/systemctl'
+        CommandLine|contains: 'enable'
+    condition: selection
+falsepositives:
+    - Legitimate service installation by administrators
+    - Package manager post-installation scripts
+level: low

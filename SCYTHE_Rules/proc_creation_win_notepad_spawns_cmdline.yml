@@ -1,0 +1,28 @@
+title: Notepad++ Spawning Command Shell Process
+id: 58512062-2366-42b5-83d3-0b3732dbcb7e
+status: experimental
+description: Detects Notepad++ spawning command-line processes (cmd.exe, powershell.exe) or other system binaries. This behavior has been associated with Pikabot malware, which abuses Notepad++ for code execution.
+references:
+    - https://support.scythe.io/knowledge/empower-1-feb2024-pikabot
+author: Tyler Casey, SCYTHE
+date: 2024-02-27
+tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.t1059.003
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_parent:
+        ParentImage|endswith: '\notepad++.exe'
+    selection_child:
+        Image|endswith:
+            - '\cmd.exe'
+            - '\powershell.exe'
+            - '\pwsh.exe'
+    condition: all of selection_*
+falsepositives:
+    - Users intentionally running scripts from Notepad++
+    - Notepad++ plugins executing shell commands
+level: high

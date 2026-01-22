@@ -1,0 +1,26 @@
+title: Set Run Key Registry Value
+id: 65cd0d2b-b9f6-4562-80d3-fbb69091389f
+status: experimental
+description: Detects modifications in the "\Software\Microsoft\Windows\CurrentVersion\Run" and "\Software\Microsoft\Windows\CurrentVersion\RunOnce" registry keys. Adversaries may utilize these keys for persistence.
+references:
+    - https://www.volexity.com/blog/2023/06/28/charming-kitten-updates-powerstar-with-an-interplanetary-twist/
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024-07-24
+tags:
+    - attack.persistence
+    - attack.t1050
+logsource:
+    product: windows
+    category: registry_set
+detection:
+    selection_targetobj:
+        TargetObject|contains:
+            - '\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\'
+            - '\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce\\'
+    selection_allowlist: # Add known good services here to reduce false positives
+        TargetObject|contains:
+            - 'System\\CurrentControlSet\\Services\\WinDefend'
+    condition: selection_targetobj and not selection_allowlist
+falsepositives:
+    - Legitimate administrator or user modifies registry keys for legitimate purposes. Add known good entries to the selection_allowlist to minimize false positives.
+level: medium

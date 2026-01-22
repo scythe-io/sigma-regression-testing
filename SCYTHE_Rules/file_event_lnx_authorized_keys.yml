@@ -1,0 +1,21 @@
+title: Suspicious Authorized Keys File Modification
+id: cea25325-8b81-48ad-bd42-2a8968035cf2
+status: experimental
+description: Detects file creation, deletion, or modification events targeting authorized_keys files. The authorized_keys file controls SSH public key authentication, and unauthorized modifications may indicate an adversary establishing persistent backdoor access.
+references:
+    - https://support.scythe.io/knowledge/azure-resource-group-backdoor
+author: Tyler Casey, SCYTHE
+date: 2024-03-28
+tags:
+    - attack.persistence
+    - attack.t1098.004
+logsource:
+    product: linux
+    category: file_event
+detection:
+    selection:
+        TargetFilename|contains: 'authorized_keys'
+    condition: selection
+falsepositives:
+    - Administrators adding new authorized keys for legitimate purposes
+level: high

@@ -1,0 +1,33 @@
+title: Command Shell Spawned from Non-Standard Parent Location
+id: 03aa33d7-758c-43e4-9016-520239272a43
+status: experimental
+description: Detects CMD or PowerShell execution as a child process of an application not running from System32 or Program Files directories. This pattern may indicate malware or malicious scripts spawning command shells for further execution.
+references:
+    - https://support.scythe.io/knowledge/volt-typhoon
+author: Tyler Casey, SCYTHE
+date: 2024-04-24
+tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.t1059.003
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_shells:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+            - '\cmd.exe'
+    filter_main_standard_parents:
+        ParentImage|contains:
+            - '\Windows\System32\'
+            - '\Windows\SysWOW64\'
+            - '\Program Files\'
+            - '\Program Files (x86)\'
+    condition: selection_shells and not filter_main_standard_parents
+falsepositives:
+    - Legitimate applications from non-standard locations spawning shells
+    - Development tools
+    - Portable applications
+level: medium

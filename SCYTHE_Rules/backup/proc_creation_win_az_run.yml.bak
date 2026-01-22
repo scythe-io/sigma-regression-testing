@@ -1,0 +1,23 @@
+title: Suspicious Azure Run-Command
+id: 6745e010-bca4-49a2-9ec2-92a1e7957744
+status: experimental
+description: Detects suspicious AZ VM run-command invoke from a windows host.  This should be executed infrequently and unexpected executions should be investigated.  
+references:
+    -   https://support.scythe.io/knowledge/azure-resource-group-backdoor    
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/28
+tags:
+    - attack.execution
+    - attack.1059
+logsource:
+    product: windows
+    category: proc_creation
+detection:
+    selection:
+        CommandLine|contains:
+            - 'az vm run-command invoke'
+    condition: selection
+falsepositives:
+    - Administrators may use this for Azure VM management.
+level: 
+    - medium

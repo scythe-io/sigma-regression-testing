@@ -1,0 +1,22 @@
+title: Systemd Service Unit File Creation
+id: b1aa3509-82c0-423c-ac80-262a25b0e0f4
+status: experimental
+description: Detects file creation events in /etc/systemd/system/ directory. Adversaries may create malicious systemd service unit files in this location to establish persistence, ensuring their payloads execute automatically on system startup.
+references:
+    - https://support.scythe.io/knowledge/systemd-persistence
+author: Tyler Casey, SCYTHE
+date: 2024-06-28
+tags:
+    - attack.persistence
+    - attack.t1543.002
+logsource:
+    category: file_event
+    product: linux
+detection:
+    selection:
+        TargetFilename|startswith: '/etc/systemd/system'
+    condition: selection
+falsepositives:
+    - Legitimate service installation by administrators
+    - Package manager installing services
+level: low

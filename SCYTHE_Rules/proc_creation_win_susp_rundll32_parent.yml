@@ -1,0 +1,32 @@
+title: Rundll32 Execution with Suspicious Parent Process
+id: e52a60a2-7f60-4970-9b91-5a1e5d1e6cba
+status: experimental
+description: Detects rundll32.exe execution spawned by command shells (cmd.exe, powershell.exe) or by parent processes running from non-standard directories. Adversaries commonly abuse rundll32 to execute malicious DLLs while evading detection.
+references:
+    - https://support.scythe.io/knowledge/grimresource
+author: Tyler Casey, SCYTHE
+date: 2024-07-23
+tags:
+    - attack.t1218.011
+    - attack.t1059
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_rundll32:
+        Image|endswith: '\rundll32.exe'
+    selection_suspicious_parent:
+        ParentImage|endswith:
+            - '\cmd.exe'
+            - '\powershell.exe'
+            - '\pwsh.exe'
+    filter_main_standard_paths:
+        ParentImage|contains:
+            - '\Windows\System32\'
+            - '\Windows\SysWOW64\'
+            - '\Program Files\'
+            - '\Program Files (x86)\'
+    condition: selection_rundll32 and (selection_suspicious_parent or not filter_main_standard_paths)
+falsepositives:
+    - Legitimate software using rundll32 for DLL execution
+level: medium

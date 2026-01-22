@@ -1,0 +1,28 @@
+title: File Creation in System Binary Directories
+id: 02b2514b-46d8-45ab-b7a2-173ba4e8af48
+status: experimental
+description: Detects file creation events in /usr/bin/ or /usr/sbin/ directories. While this may indicate legitimate software installation, adversaries may drop malicious binaries in these locations to achieve persistence or blend in with legitimate system tools.
+references:
+    - https://support.scythe.io/knowledge/empower-logrotate
+    - https://tldp.org/LDP/Linux-Filesystem-Hierarchy/html/bin.html
+    - https://tldp.org/LDP/Linux-Filesystem-Hierarchy/html/sbin.html
+author: Tyler Casey, SCYTHE
+date: 2024-10-03
+tags:
+    - attack.persistence
+    - attack.t1543.002
+    - attack.execution
+    - attack.t1059.004
+logsource:
+    category: file_event
+    product: linux
+detection:
+    selection:
+        TargetFilename|startswith:
+            - '/usr/bin/'
+            - '/usr/sbin/'
+    condition: selection
+falsepositives:
+    - Legitimate software package installation via package manager
+    - System updates
+level: low

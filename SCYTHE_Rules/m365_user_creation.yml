@@ -1,0 +1,23 @@
+title: User Account Creation in Microsoft 365
+id: faed11fe-d240-4fe9-9c3f-1641cb774dcb
+status: experimental
+description: Detects user account creation events in Microsoft 365 via the Unified Audit Log. Adversaries may create rogue accounts in cloud environments to establish persistent access or facilitate lateral movement.
+references:
+    - https://support.scythe.io/knowledge/m365
+author: Tyler Casey, SCYTHE
+date: 2024-03-27
+tags:
+    - attack.persistence
+    - attack.t1136.003
+logsource:
+    product: m365
+    service: threat_management
+detection:
+    selection:
+        EventSource: 'UnifiedAuditLog'
+        Operation|contains: 'User added'
+    condition: selection
+falsepositives:
+    - Normal user provisioning by administrators
+    - Automated user onboarding processes
+level: low

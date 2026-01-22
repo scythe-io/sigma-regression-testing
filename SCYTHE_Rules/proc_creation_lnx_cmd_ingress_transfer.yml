@@ -1,0 +1,28 @@
+title: Command-Line File Transfer Utility Execution
+id: 41138321-4ec6-4284-8485-c8587f683ed4
+status: experimental
+description: Detects process creation events for command-line file transfer utilities (wget, curl, scp, aria2c, rclone). While these tools have legitimate uses, adversaries frequently leverage them to download malicious payloads or exfiltrate data.
+references:
+    - https://support.scythe.io/knowledge/cloudfox-v2
+author: Tyler Casey, SCYTHE
+date: 2024-06-28
+tags:
+    - attack.t1105
+    - attack.t1048
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection:
+        Image|endswith:
+            - '/wget'
+            - '/curl'
+            - '/scp'
+            - '/aria2c'
+            - '/rclone'
+    condition: selection
+falsepositives:
+    - Legitimate file transfers by administrators
+    - Package manager operations
+    - Automated backup or deployment scripts
+level: low

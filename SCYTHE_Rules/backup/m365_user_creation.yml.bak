@@ -1,0 +1,25 @@
+title: M365 User Creation
+id: faed11fe-d240-4fe9-9c3f-1641cb774dcb
+status: experimental
+description: Detects user creation in Microsoft 365 via the Unified Audit Log.
+references:
+    -   https://support.scythe.io/knowledge/m365
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/27
+tags:
+    - attack.persistence
+    - attack.1136.003
+logsource:
+    product: m365
+    service: threat_management
+detection:
+    selection:
+        EventSource:
+            - UnifiedAuditLog
+        Operation|contains: 
+            - 'User added'
+    condition: selection
+falsepositives:
+    - Normal user creation.
+level: 
+    - low

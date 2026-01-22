@@ -1,0 +1,65 @@
+title: LOLBAS Discovery Command Execution
+id: 670f5683-2ea7-478a-a690-d790bf1aaa27
+name: lolbas_discovery
+status: experimental
+description: Detects execution of common Living Off The Land Binaries and Scripts (LOLBAS) used for system discovery. High volume of these commands from a single parent process may indicate automated reconnaissance activity.
+references:
+    - https://www.cisa.gov/sites/default/files/2023-07/aa23-187a-increased-truebot-activity-infects-us-and-canada-based-networks_2.pdf
+    - https://lolbas-project.github.io/
+author: Tyler Casey, SCYTHE
+date: 2024-02-29
+tags:
+    - attack.discovery
+    - attack.t1082
+    - attack.t1016
+    - attack.execution
+    - attack.t1059
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection:
+        CommandLine|contains:
+            - 'whoami'
+            - 'vssadmin'
+            - 'msiexec'
+            - 'mstsc'
+            - 'mshta'
+            - 'netsh'
+            - 'arp -'
+            - 'netstat'
+            - 'net.exe'
+            - 'w32tm'
+            - 'schtasks'
+            - 'systeminfo'
+            - 'tasklist'
+            - 'ipconfig'
+            - 'qwinsta'
+            - 'quser'
+    condition: selection
+falsepositives:
+    - System administration tasks
+    - Troubleshooting activities
+level: low
+---
+title: Multiple LOLBAS Discovery Commands from Single Parent Process
+id: 670f5683-2ea7-478a-a690-d790bf1aaa28
+status: experimental
+description: Detects multiple LOLBAS discovery commands executed from the same parent process within 30 seconds, indicating potential automated reconnaissance.
+references:
+    - https://www.cisa.gov/sites/default/files/2023-07/aa23-187a-increased-truebot-activity-infects-us-and-canada-based-networks_2.pdf
+author: Tyler Casey, SCYTHE
+date: 2024-02-29
+tags:
+    - attack.discovery
+    - attack.t1082
+correlation:
+    type: event_count
+    rules:
+        - lolbas_discovery
+    group-by:
+        - ParentImage
+    timespan: 30s
+    condition:
+        gte: 3
+level: medium

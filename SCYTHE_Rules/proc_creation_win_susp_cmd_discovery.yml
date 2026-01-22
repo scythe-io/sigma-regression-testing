@@ -1,0 +1,32 @@
+title: Discovery Commands Spawned by Non-Shell Parent Process
+id: 8e2ad471-257f-49f3-8e45-0da1ec8a62b9
+status: experimental
+description: Detects execution of common discovery commands (whoami, ipconfig, hostname) by processes whose parent is not a standard command shell. This may indicate malware performing automated reconnaissance without user interaction.
+references:
+    - https://support.scythe.io/knowledge/march-2024-ioc-applejeus
+author: Tyler Casey, SCYTHE
+date: 2024-03-13
+tags:
+    - attack.discovery
+    - attack.t1033
+    - attack.t1016
+    - attack.t1082
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_discovery:
+        Image|endswith:
+            - '\whoami.exe'
+            - '\ipconfig.exe'
+            - '\hostname.exe'
+    filter_main_shells:
+        ParentImage|endswith:
+            - '\cmd.exe'
+            - '\powershell.exe'
+            - '\pwsh.exe'
+    condition: selection_discovery and not filter_main_shells
+falsepositives:
+    - Legitimate applications spawning discovery commands
+    - System management software
+level: medium

@@ -1,0 +1,25 @@
+title: Suspicious icalcs Process Execution
+id: 4ded5f6e-cfd6-4666-8f9d-d913a07efb8f
+status: experimental    
+description: Detects suspicious modification to discretionary access control lists (DACLs) on specified files via icalcs execution.
+references:
+    - https://blog.sonicwall.com/en-us/2024/03/new-multi-stage-stopcrypt-ransomware/
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/04/04
+tags:
+    - attack.defense_evasion
+    - attack.t1222.001
+logsource:
+    product: windows
+    category: proc_creation
+detection:
+    selection:
+        Image|endswith:
+            - '\icacls.exe'
+        CommandLine|contains:
+            - '/deny *S-1-1-0:'
+    condition: selection
+falsepositives:
+    - Administrators modifying DACLs on files.
+level: 
+    - high

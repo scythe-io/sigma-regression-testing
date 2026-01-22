@@ -1,0 +1,40 @@
+title: Salt Typhoon Campaign Process Execution Patterns
+id: 1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+status: experimental
+description: Detects process execution patterns associated with Salt Typhoon campaign including CAB file extraction, registry file imports, and PowerShell execution with bypass flag. These techniques are used for payload deployment and persistence.
+references:
+    - https://www.sygnia.co/blog/ghost-emperor-demodex-rootkit/
+author: Jarrad Pemberton, SCYTHE
+date: 2025-01-18
+tags:
+    - attack.t1059.001
+    - attack.t1059.003
+    - attack.t1027.002
+    - attack.t1543.003
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_cab_extract:
+        Image|endswith:
+            - '\expand.exe'
+            - '\extrac32.exe'
+        CommandLine|contains: '.cab'
+    selection_reg_import:
+        Image|endswith: '\reg.exe'
+        CommandLine|contains|all:
+            - 'import'
+            - '.reg'
+    selection_powershell_bypass:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains|all:
+            - '-ex bypass'
+            - '.ps1'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate CAB extraction during software installation
+    - Administrative registry imports
+    - PowerShell scripts with execution policy bypass
+level: medium

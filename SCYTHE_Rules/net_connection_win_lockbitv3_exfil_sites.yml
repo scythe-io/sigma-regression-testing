@@ -1,0 +1,28 @@
+title: Network Connection to LockBit 3.0 Exfiltration File Sharing Sites
+id: 6db8e955-2731-42ff-9b8f-4eb87834ed88
+status: experimental
+description: Detects network connections to file sharing services commonly used by LockBit 3.0 ransomware for data exfiltration. These sites are used to upload stolen data before encryption.
+references:
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-075a
+author: Tyler Casey, SCYTHE
+date: 2023-12-22
+tags:
+    - attack.t1567.002
+    - attack.t1071.001
+logsource:
+    product: windows
+    category: network_connection
+detection:
+    selection:
+        DestinationHostname|contains:
+            - 'hanproud.com'
+            - 'premiumize.com'
+            - 'anonfiles.com'
+            - 'sendspace.com'
+            - 'fex.net'
+            - 'transfer.sh'
+            - 'send.exploit.in'
+    condition: selection
+falsepositives:
+    - Legitimate use of file sharing services
+level: medium

@@ -1,0 +1,40 @@
+title: Suspicious Executables in Temp Directories
+id: b0bb40b3-d9c7-48e7-8172-0e7e59d09366
+status: experimental    
+description: Detects executable file events in %TEMP% directories that do not originate from Program Files, this technique is utilized in Stop Crypt Ransomware Campaigns for persistence.
+references:
+    - https://blog.sonicwall.com/en-us/2024/03/new-multi-stage-stopcrypt-ransomware/
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/04/04
+tags:
+    - attack.persistence
+    - attack.t1053
+logsource:
+    product: windows
+    category: file_event
+detection:
+    selection_filename:
+        TargetFilename|contains:
+            - '\AppData\Local\'
+    selection_filename_exec:
+        TargetFilename|endswith: #common file extensions
+            - '.exe'
+            - '.ps1'
+            - '.bat'
+            - '.msi'
+            - '.py'
+            - '.wsf'
+            - '.com'
+            - '.vbs'
+    selection_img:
+        Image|contains:
+            - '\Program Files\'
+            - '\Program Files (x86)\'
+    selection_filename_exclude: #Excludes PSScriptPolicyTest files, could lead to FN.
+        TargetFilename|contains:
+            - 'PSScriptPolicyTest'
+    condition: selection_filename and selection_filename_exec not selection_img not selection_filename_exclude
+falsepositives:
+    - Legitimate file creation.
+level: 
+    - high

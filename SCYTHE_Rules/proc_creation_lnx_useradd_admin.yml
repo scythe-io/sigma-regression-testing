@@ -1,0 +1,23 @@
+title: Administrative User Account Creation via Useradd
+id: 1990b3a1-f0e1-4dd6-8b35-7bba7db819d8
+status: experimental
+description: Detects user account creation via useradd with references to sudo group membership. Adversaries may create rogue administrative accounts to establish persistent privileged access to compromised systems.
+references:
+    - https://cloud.google.com/blog/topics/threat-intelligence/initial-access-brokers-exploit-f5-screenconnect
+    - https://support.scythe.io/knowledge/unc5174-ioc
+author: Tyler Casey, SCYTHE
+date: 2024-06-27
+tags:
+    - attack.persistence
+    - attack.t1136.001
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection:
+        Image|endswith: '/useradd'
+        CommandLine|contains: 'sudo'
+    condition: selection
+falsepositives:
+    - Legitimate administrative account creation by system administrators
+level: medium
