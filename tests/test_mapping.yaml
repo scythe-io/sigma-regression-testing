@@ -1,0 +1,150 @@
+# Sigma Rule Regression Test Mapping
+#
+# Maps SCYTHE atomic actions to expected Sigma rule triggers.
+# Used by regression-test.py to validate detection coverage.
+#
+# Each test case defines:
+#   - name: Human-readable test name
+#   - description: What the test validates
+#   - scythe_action: SCYTHE action to execute
+#   - scythe_params: Parameters for the action
+#   - expected_rules: List of Splunk saved search names that should fire
+#   - mitre_technique: MITRE ATT&CK technique ID
+#   - timeout_seconds: Max wait time for rule to trigger
+
+tests:
+  # ============================================
+  # Discovery Techniques (TA0007)
+  # ============================================
+
+  - name: "Conti Ransomware Discovery"
+    description: "Test detection of Conti-style reconnaissance commands"
+    scythe_action: "run"
+    scythe_params:
+      command: "ipconfig /all && systeminfo && whoami"
+    expected_rules:
+      - "Conti Ransomware Discovery Commands"
+    mitre_technique: "T1082"
+    timeout_seconds: 300
+
+  - name: "Network Discovery via Net Commands"
+    description: "Test detection of network enumeration"
+    scythe_action: "run"
+    scythe_params:
+      command: "net view && net user && net localgroup administrators"
+    expected_rules:
+      - "Net Command Network Discovery"
+    mitre_technique: "T1018"
+    timeout_seconds: 300
+
+  - name: "Directory Listing Discovery"
+    description: "Test detection of file system enumeration"
+    scythe_action: "run"
+    scythe_params:
+      command: "dir C:\\Users /s"
+    expected_rules:
+      - "Suspicious Directory Listing"
+    mitre_technique: "T1083"
+    timeout_seconds: 300
+
+  # ============================================
+  # Persistence Techniques (TA0003)
+  # ============================================
+
+  - name: "Registry Run Key Persistence"
+    description: "Test detection of Run key modification"
+    scythe_action: "run"
+    scythe_params:
+      command: "reg add HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v TestKey /t REG_SZ /d C:\\temp\\test.exe /f"
+    expected_rules:
+      - "Suspicious Run Key Modification"
+    mitre_technique: "T1547.001"
+    timeout_seconds: 300
+
+  - name: "Scheduled Task Creation"
+    description: "Test detection of suspicious scheduled task creation"
+    scythe_action: "run"
+    scythe_params:
+      command: "schtasks /create /tn TestTask /tr C:\\temp\\test.exe /sc onlogon /ru SYSTEM"
+    expected_rules:
+      - "Suspicious Scheduled Task Creation"
+    mitre_technique: "T1053.005"
+    timeout_seconds: 300
+
+  # ============================================
+  # Defense Evasion (TA0005)
+  # ============================================
+
+  - name: "Event Log Clearing"
+    description: "Test detection of Windows event log clearing"
+    scythe_action: "run"
+    scythe_params:
+      command: "wevtutil cl Security"
+    expected_rules:
+      - "Windows Event Log Cleared"
+    mitre_technique: "T1070.001"
+    timeout_seconds: 300
+
+  - name: "File Rename to Evade Detection"
+    description: "Test detection of suspicious file renaming"
+    scythe_action: "run"
+    scythe_params:
+      command: "copy C:\\Windows\\System32\\cmd.exe C:\\temp\\svchost.exe"
+    expected_rules:
+      - "Suspicious File Rename"
+    mitre_technique: "T1036"
+    timeout_seconds: 300
+
+  # ============================================
+  # Execution Techniques (TA0002)
+  # ============================================
+
+  - name: "Suspicious Rundll32 Execution"
+    description: "Test detection of abnormal rundll32 parent process"
+    scythe_action: "run"
+    scythe_params:
+      command: "rundll32.exe javascript:\"\\..\\mshtml,RunHTMLApplication\""
+    expected_rules:
+      - "Suspicious Rundll32 Parent Process"
+    mitre_technique: "T1218.011"
+    timeout_seconds: 300
+
+  - name: "CMD from Office Application"
+    description: "Test detection of command shell spawned by Office"
+    scythe_action: "run"
+    scythe_params:
+      # This simulates the behavior; actual test needs Office process
+      command: "cmd.exe /c whoami"
+      parent_process: "WINWORD.EXE"
+    expected_rules:
+      - "Suspicious CMD or PowerShell Parent"
+    mitre_technique: "T1059.001"
+    timeout_seconds: 300
+
+  # ============================================
+  # Credential Access (TA0006)
+  # ============================================
+
+  - name: "Azure CLI Suspicious Activity"
+    description: "Test detection of Azure credential enumeration"
+    scythe_action: "run"
+    scythe_params:
+      command: "az account list"
+    expected_rules:
+      - "Azure CLI Suspicious Command Line"
+    mitre_technique: "T1087.004"
+    timeout_seconds: 300
+
+  # ============================================
+  # Impact Techniques (TA0040)
+  # ============================================
+
+  - name: "Suspicious Archive Creation"
+    description: "Test detection of data staging via archive"
+    scythe_action: "run"
+    scythe_params:
+      command: "powershell Compress-Archive -Path C:\\Users\\* -DestinationPath C:\\temp\\data.zip"
+    expected_rules:
+      - "Suspicious Archive Creation"
+    mitre_technique: "T1560.001"
+    timeout_seconds: 300

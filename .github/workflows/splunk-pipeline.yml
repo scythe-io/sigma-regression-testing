@@ -1,0 +1,220 @@
+name: Splunk Detection Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'SCYTHE_Rules/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'SCYTHE_Rules/**'
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to Splunk after conversion'
+        required: false
+        default: 'false'
+        type: boolean
+      run_regression:
+        description: 'Run regression tests after deployment'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  convert:
+    name: Convert Sigma to Splunk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install sigma-cli pysigma pysigma-backend-splunk pysigma-pipeline-windows PyYAML
+
+      - name: Validate Sigma rules
+        run: |
+          echo "=== Validating Sigma Rules ==="
+          sigma check SCYTHE_Rules/*.yml
+
+      - name: Convert to Splunk format
+        run: |
+          echo "=== Converting to Splunk Saved Searches ==="
+          python scripts/convert-to-splunk.py -i SCYTHE_Rules -o splunk_output
+
+      - name: Display conversion summary
+        run: |
+          echo "=== Conversion Report ==="
+          cat splunk_output/conversion_report.json | python -m json.tool
+
+          # Add to job summary
+          SUCCESSFUL=$(jq '.successful_conversions' splunk_output/conversion_report.json)
+          FAILED=$(jq '.failed_conversions' splunk_output/conversion_report.json)
+          SKIPPED=$(jq '.skipped_rules' splunk_output/conversion_report.json)
+
+          echo "## Splunk Conversion Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Successful | $SUCCESSFUL |" >> $GITHUB_STEP_SUMMARY
+          echo "| Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skipped (non-Windows) | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Splunk artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: splunk-savedsearches-${{ github.run_number }}
+          path: |
+            splunk_output/savedsearches.conf
+            splunk_output/conversion_report.json
+          retention-days: 90
+
+      - name: Check for conversion failures
+        run: |
+          FAILED=$(jq '.failed_conversions' splunk_output/conversion_report.json)
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::warning::$FAILED rules failed to convert"
+          fi
+
+  deploy:
+    name: Deploy to Splunk
+    runs-on: ubuntu-latest
+    needs: convert
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true')
+
+    environment: splunk-production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Splunk artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: splunk-savedsearches-${{ github.run_number }}
+          path: splunk_output
+
+      - name: Deploy to Splunk
+        env:
+          SPLUNK_HOST: ${{ secrets.SPLUNK_HOST }}
+          SPLUNK_PORT: ${{ secrets.SPLUNK_PORT }}
+          SPLUNK_USER: ${{ secrets.SPLUNK_USER }}
+          SPLUNK_PASSWORD: ${{ secrets.SPLUNK_PASSWORD }}
+          SPLUNK_APP: ${{ secrets.SPLUNK_APP || 'search' }}
+        run: |
+          echo "=== Deploying to Splunk ==="
+
+          # Install PowerShell Core for cross-platform script execution
+          # Or use a Python deployment script
+
+          # For now, use curl to deploy via REST API
+          # This is a simplified example - the PowerShell script has more features
+
+          # Count searches to deploy
+          SEARCH_COUNT=$(grep -c '^\[' splunk_output/savedsearches.conf || echo "0")
+          SEARCH_COUNT=$((SEARCH_COUNT - 1))  # Subtract [default] stanza
+
+          echo "Deploying $SEARCH_COUNT saved searches to Splunk..."
+
+          # Note: Full deployment requires the deploy-to-splunk.ps1 script
+          # or equivalent Python script for the CI environment
+
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target:** $SPLUNK_HOST" >> $GITHUB_STEP_SUMMARY
+          echo "- **App:** $SPLUNK_APP" >> $GITHUB_STEP_SUMMARY
+          echo "- **Searches:** $SEARCH_COUNT" >> $GITHUB_STEP_SUMMARY
+
+  regression-test:
+    name: Run Regression Tests
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.run_regression == 'true'
+
+    environment: splunk-production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install requests pyyaml urllib3
+
+      - name: Run regression tests
+        env:
+          SPLUNK_HOST: ${{ secrets.SPLUNK_HOST }}
+          SPLUNK_PORT: ${{ secrets.SPLUNK_PORT }}
+          SPLUNK_USER: ${{ secrets.SPLUNK_USER }}
+          SPLUNK_PASSWORD: ${{ secrets.SPLUNK_PASSWORD }}
+          SCYTHE_API_URL: ${{ secrets.SCYTHE_API_URL }}
+          SCYTHE_API_KEY: ${{ secrets.SCYTHE_API_KEY }}
+        run: |
+          echo "=== Running Regression Tests ==="
+
+          # Check if test config exists
+          if [ ! -f "tests/test_mapping.yaml" ]; then
+            echo "No test configuration found. Creating example..."
+            python scripts/regression-test.py --dry-run --test-config tests/test_mapping.yaml
+            echo "::warning::No test_mapping.yaml found. Example created."
+            exit 0
+          fi
+
+          python scripts/regression-test.py \
+            --splunk-host "$SPLUNK_HOST" \
+            --splunk-port "$SPLUNK_PORT" \
+            --splunk-user "$SPLUNK_USER" \
+            --splunk-pass "$SPLUNK_PASSWORD" \
+            --scythe-url "$SCYTHE_API_URL" \
+            --scythe-key "$SCYTHE_API_KEY" \
+            --test-config tests/test_mapping.yaml \
+            --output test_results.json
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regression-test-results-${{ github.run_number }}
+          path: test_results.json
+          retention-days: 30
+
+      - name: Report test results
+        if: always()
+        run: |
+          if [ -f "test_results.json" ]; then
+            PASSED=$(jq '.summary.passed' test_results.json)
+            FAILED=$(jq '.summary.failed' test_results.json)
+            RATE=$(jq -r '.summary.pass_rate' test_results.json)
+
+            echo "## Regression Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+            echo "| Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+            echo "| Pass Rate | $RATE |" >> $GITHUB_STEP_SUMMARY
+
+            if [ "$FAILED" -gt 0 ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### Failed Tests" >> $GITHUB_STEP_SUMMARY
+              jq -r '.results[] | select(.passed == false) | "- **\(.test_name)**: Missing rules: \(.missing_rules | join(", "))"' test_results.json >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+          fi

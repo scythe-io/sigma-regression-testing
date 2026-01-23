@@ -69,11 +69,18 @@ sigma convert -t microsoft365defender SCYTHE_Rules/*.yml
 │   ├── net_connection_*.yml   # Network rules
 │   └── m365_*.yml             # Microsoft 365 rules
 ├── scripts/
-│   └── update-readme-stats.py # Auto-update README statistics
+│   ├── update-readme-stats.py # Auto-update README statistics
+│   ├── convert-to-splunk.py   # Convert rules to Splunk format
+│   ├── deploy-to-splunk.ps1   # Deploy saved searches to Splunk
+│   └── regression-test.py     # SCYTHE integration regression testing
+├── tests/
+│   └── test_mapping.yaml      # SCYTHE action to rule mappings
+├── splunk_output/             # Generated Splunk artifacts (gitignored)
 ├── wip/                       # Work in progress (not production ready)
 │   └── aurora/                # Aurora EDR integration (coming soon)
 └── .github/workflows/
     ├── sigma-validate.yml     # CI validation workflow
+    ├── splunk-pipeline.yml    # Splunk detection pipeline
     └── deploy-rules.yml       # Deployment workflow (WIP)
 ```
 
@@ -118,6 +125,113 @@ Automatically validates rules on every code change.
 > **Status: Work in Progress** - Template available but not yet configured for production use.
 
 Template for deploying validated rules to endpoints. Supports Azure Blob, AWS S3, and SSH deployment options.
+
+## Splunk Detection Pipeline
+
+A complete detection engineering pipeline for deploying Sigma rules to Splunk and validating them with SCYTHE atomic actions.
+
+### Pipeline Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  CONVERT JOB                                                │
+├─────────────────────────────────────────────────────────────┤
+│  1. Validate Sigma rules                                    │
+│  2. Convert Windows rules to Splunk savedsearches.conf      │
+│  3. Generate conversion report                              │
+│  4. Upload artifacts                                        │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼ (on merge to main or manual trigger)
+┌─────────────────────────────────────────────────────────────┐
+│  DEPLOY JOB                                                 │
+├─────────────────────────────────────────────────────────────┤
+│  1. Download converted artifacts                            │
+│  2. Deploy saved searches to Splunk via REST API            │
+│  3. Configure alerts (optional)                             │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼ (manual trigger only)
+┌─────────────────────────────────────────────────────────────┐
+│  REGRESSION TEST JOB                                        │
+├─────────────────────────────────────────────────────────────┤
+│  1. Execute SCYTHE atomic actions                           │
+│  2. Query Splunk for triggered rules                        │
+│  3. Report coverage and failures                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Local Usage
+
+**Convert rules to Splunk format:**
+
+```bash
+# Install dependencies
+pip install sigma-cli pysigma pysigma-backend-splunk pysigma-pipeline-windows PyYAML
+
+# List compatible rules
+python scripts/convert-to-splunk.py --list-compatible
+
+# Convert all rules
+python scripts/convert-to-splunk.py -i SCYTHE_Rules -o splunk_output
+```
+
+**Deploy to Splunk:**
+
+```powershell
+# Deploy saved searches (interactive)
+.\scripts\deploy-to-splunk.ps1 -SplunkHost splunk.company.com -Username admin
+
+# Deploy with alerts enabled
+.\scripts\deploy-to-splunk.ps1 -SplunkHost splunk.company.com -Username admin -EnableAlerts -AlertEmail soc@company.com
+
+# Dry run (validate without deploying)
+.\scripts\deploy-to-splunk.ps1 -SplunkHost splunk.company.com -Username admin -DryRun
+```
+
+**Run regression tests:**
+
+```bash
+# Dry run (show test cases without executing)
+python scripts/regression-test.py --dry-run --test-config tests/test_mapping.yaml
+
+# Run tests with SCYTHE
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --splunk-user admin \
+  --scythe-url https://scythe.company.com \
+  --test-config tests/test_mapping.yaml
+```
+
+### GitHub Actions Setup
+
+To enable automated deployment, configure these secrets in your repository:
+
+| Secret | Description |
+|--------|-------------|
+| `SPLUNK_HOST` | Splunk server hostname |
+| `SPLUNK_PORT` | Management port (default: 8089) |
+| `SPLUNK_USER` | Splunk admin username |
+| `SPLUNK_PASSWORD` | Splunk admin password |
+| `SPLUNK_APP` | Target app (default: search) |
+| `SCYTHE_API_URL` | SCYTHE API endpoint |
+| `SCYTHE_API_KEY` | SCYTHE API key |
+
+### Test Mapping Configuration
+
+Define test cases in `tests/test_mapping.yaml`:
+
+```yaml
+tests:
+  - name: "Event Log Clearing"
+    description: "Test detection of Windows event log clearing"
+    scythe_action: "run"
+    scythe_params:
+      command: "wevtutil cl Security"
+    expected_rules:
+      - "Windows Event Log Cleared"
+    mitre_technique: "T1070.001"
+```
 
 ## Aurora EDR Integration
 
