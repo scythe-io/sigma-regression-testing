@@ -1,24 +1,59 @@
-title: Docker Container Started with Privileged Flag
+title: Docker Container Started with Dangerous Capabilities
 id: 418d86a9-45a1-474a-b86e-7f22fe5f020b
 status: experimental
-description: Detects Docker containers started with the --privileged flag. Privileged containers have full access to the host system and can be used by adversaries to escape container isolation, access host filesystems, or perform kernel-level attacks.
+description: Detects Docker containers started with privileged mode or dangerous capabilities. Privileged containers have full access to the host system and can be used by adversaries to escape container isolation, access host filesystems, or perform kernel-level attacks.
 references:
     - https://support.scythe.io/knowledge/malicious-docker-container
+    - https://attack.mitre.org/techniques/T1611/
 author: Tyler Casey, SCYTHE
 date: 2024-09-04
+modified: 2026-01-23
 tags:
+    - attack.privilege_escalation
     - attack.t1611
+    - attack.execution
     - attack.t1610
 logsource:
     category: process_creation
     product: linux
 detection:
     selection_docker:
-        Image|endswith: '/docker'
+        Image|endswith:
+            - '/docker'
+            - '/podman'
+            - '/nerdctl'
+    selection_run:
+        CommandLine|contains:
+            - ' run '
+            - ' exec '
+            - ' create '
     selection_privileged:
         CommandLine|contains: '--privileged'
-    condition: all of selection_*
+    selection_dangerous_caps:
+        CommandLine|contains:
+            - '--cap-add=SYS_ADMIN'
+            - '--cap-add=SYS_PTRACE'
+            - '--cap-add=SYS_RAWIO'
+            - '--cap-add=DAC_READ_SEARCH'
+            - '--cap-add=ALL'
+    selection_host_access:
+        CommandLine|contains:
+            - '--pid=host'
+            - '--network=host'
+            - '--ipc=host'
+            - '--uts=host'
+            - '-v /:/host'
+            - '-v /etc:/etc'
+            - '-v /var/run/docker.sock'
+            - '--mount type=bind,source=/'
+    filter_orchestration:
+        ParentImage|endswith:
+            - '/kubelet'
+            - '/containerd'
+            - '/dockerd'
+    condition: (selection_docker and selection_run and selection_privileged and not 1 of filter_*) or (selection_docker and selection_run and selection_dangerous_caps) or (selection_docker and selection_run and selection_host_access)
 falsepositives:
     - Legitimate use of privileged containers for system administration
+    - Container orchestration platforms requiring elevated privileges
     - Development and testing environments
 level: high

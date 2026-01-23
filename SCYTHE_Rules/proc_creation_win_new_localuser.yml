@@ -4,8 +4,10 @@ status: experimental
 description: Detects execution of the New-LocalUser PowerShell cmdlet used to create local user accounts. Adversaries may create rogue local accounts for persistence or to avoid detection by blending in with legitimate users.
 references:
     - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-353a
+    - https://attack.mitre.org/techniques/T1136/001/
 author: Tyler Casey, SCYTHE
 date: 2024-03-28
+modified: 2026-01-23
 tags:
     - attack.persistence
     - attack.t1136.001
@@ -18,8 +20,32 @@ detection:
             - '\powershell.exe'
             - '\pwsh.exe'
     selection_cmdlet:
-        CommandLine|contains: 'New-LocalUser'
-    condition: all of selection_*
+        CommandLine|contains:
+            - 'New-LocalUser'
+            - 'Add-LocalGroupMember'
+    filter_parent_system:
+        ParentImage|endswith:
+            - '\svchost.exe'
+            - '\services.exe'
+            - '\msiexec.exe'
+    filter_parent_admin_tools:
+        ParentImage|contains:
+            - '\Program Files\Microsoft Configuration Manager\'
+            - '\Program Files (x86)\Microsoft Configuration Manager\'
+            - '\Windows\CCM\'
+    selection_admin_group:
+        CommandLine|contains:
+            - 'Administrators'
+            - 'Remote Desktop Users'
+            - 'Remote Management Users'
+    selection_suspicious_params:
+        CommandLine|contains:
+            - '-NoPassword'
+            - 'PasswordNeverExpires'
+            - '-Password (ConvertTo-SecureString'
+            - 'AsPlainText'
+    condition: (selection_powershell and selection_cmdlet and not 1 of filter_*) or (selection_powershell and selection_cmdlet and selection_admin_group) or (selection_powershell and selection_cmdlet and selection_suspicious_params)
 falsepositives:
     - Legitimate user account creation by administrators
+    - Software installation scripts
 level: medium

@@ -1,12 +1,14 @@
 title: Administrative User Account Creation via Useradd
 id: 1990b3a1-f0e1-4dd6-8b35-7bba7db819d8
 status: experimental
-description: Detects user account creation via useradd with references to sudo group membership. Adversaries may create rogue administrative accounts to establish persistent privileged access to compromised systems.
+description: Detects user account creation via useradd with administrative group membership (sudo, wheel, adm, root). Adversaries may create rogue administrative accounts to establish persistent privileged access to compromised systems.
 references:
     - https://cloud.google.com/blog/topics/threat-intelligence/initial-access-brokers-exploit-f5-screenconnect
     - https://support.scythe.io/knowledge/unc5174-ioc
+    - https://attack.mitre.org/techniques/T1136/001/
 author: Tyler Casey, SCYTHE
 date: 2024-06-27
+modified: 2026-01-23
 tags:
     - attack.persistence
     - attack.t1136.001
@@ -14,10 +16,43 @@ logsource:
     category: process_creation
     product: linux
 detection:
-    selection:
-        Image|endswith: '/useradd'
-        CommandLine|contains: 'sudo'
-    condition: selection
+    selection_useradd:
+        Image|endswith:
+            - '/useradd'
+            - '/adduser'
+    selection_admin_groups:
+        CommandLine|contains:
+            - '-G sudo'
+            - '-G wheel'
+            - '-G adm'
+            - '-G root'
+            - '-g sudo'
+            - '-g wheel'
+            - '-g adm'
+            - '-g root'
+            - '-G 0'
+            - '-g 0'
+            - '-G 27'
+            - '-g 27'
+            - '-G 10'
+            - '-g 10'
+            - ',sudo'
+            - ',wheel'
+            - ',adm'
+    selection_uid_zero:
+        CommandLine|contains:
+            - '-u 0'
+            - '-o -u 0'
+            - '--uid 0'
+    filter_config_management:
+        ParentImage|endswith:
+            - '/ansible'
+            - '/python'
+            - '/puppet'
+            - '/chef-client'
+            - '/salt-minion'
+    condition: (selection_useradd and selection_admin_groups and not 1 of filter_*) or (selection_useradd and selection_uid_zero)
 falsepositives:
     - Legitimate administrative account creation by system administrators
-level: medium
+    - Automated provisioning systems
+level: high

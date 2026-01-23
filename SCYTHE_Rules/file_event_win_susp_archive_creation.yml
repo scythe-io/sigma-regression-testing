@@ -1,11 +1,13 @@
 title: Suspicious Archive File Creation by Uncommon Process
 id: 756ff96e-6fce-44bc-9998-160951c7bcbf
 status: experimental
-description: Detects archive file creation (ZIP, 7Z, TAR, WIM) by processes other than common archive utilities. This technique is used by threat actors such as Cold River Group (SPICA) and TrueBot malware loader to stage data for exfiltration.
+description: Detects archive file creation (ZIP, 7Z, TAR, RAR, WIM) by processes other than common archive utilities. This technique is used by threat actors such as Cold River Group (SPICA) and TrueBot malware loader to stage data for exfiltration.
 references:
     - https://support.scythe.io/knowledge/empower-threat-feb2024-coldriver-spica
+    - https://attack.mitre.org/techniques/T1560/001/
 author: Tyler Casey, SCYTHE
 date: 2024-02-28
+modified: 2026-01-23
 tags:
     - attack.collection
     - attack.t1560.001
@@ -18,17 +20,54 @@ detection:
             - '.zip'
             - '.7z'
             - '.tar'
+            - '.tar.gz'
+            - '.tgz'
+            - '.rar'
             - '.wim'
-    filter_main_archive_tools:
+            - '.cab'
+    filter_archive_tools:
         Image|endswith:
             - '\7z.exe'
             - '\7zg.exe'
             - '\7zr.exe'
             - '\7za.exe'
-            - '\explorer.exe'
+            - '\7zFM.exe'
             - '\WinRAR.exe'
-    condition: selection_filename and not filter_main_archive_tools
+            - '\Rar.exe'
+            - '\UnRAR.exe'
+            - '\WinZip.exe'
+            - '\WinZip64.exe'
+            - '\wzzip.exe'
+            - '\Bandizip.exe'
+            - '\PeaZip.exe'
+            - '\IZArc.exe'
+            - '\tar.exe'
+            - '\bsdtar.exe'
+    filter_windows_system:
+        Image|endswith:
+            - '\explorer.exe'
+            - '\dism.exe'
+            - '\dismhost.exe'
+            - '\makecab.exe'
+            - '\expand.exe'
+    filter_backup_tools:
+        Image|endswith:
+            - '\robocopy.exe'
+            - '\wbengine.exe'
+            - '\veeam.backup.shell.exe'
+    filter_dev_tools:
+        Image|contains:
+            - '\Program Files\Microsoft Visual Studio\'
+            - '\Program Files (x86)\Microsoft Visual Studio\'
+            - '\Program Files\Git\'
+            - '\Program Files (x86)\Git\'
+    filter_installers:
+        Image|contains:
+            - '\Windows\Installer\'
+            - '\Windows\Temp\{'
+    condition: selection_filename and not 1 of filter_*
 falsepositives:
     - Third-party archive utilities not in filter list
     - Legitimate applications with built-in archive functionality
+    - Software deployment tools
 level: medium

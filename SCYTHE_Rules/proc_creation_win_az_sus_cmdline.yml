@@ -1,28 +1,60 @@
-title: Azure CLI Discovery Commands
+title: Azure CLI Discovery and Execution Commands
 id: 2a3a051b-946a-442e-b3ff-def01db439a2
 status: experimental
-description: Detects execution of Azure CLI commands commonly used for cloud infrastructure reconnaissance. Multiple commands in a short period may indicate an adversary enumerating Azure resources after gaining initial access.
+description: Detects execution of Azure CLI commands commonly used for cloud infrastructure reconnaissance or remote execution. Commands like 'az vm run-command' can be abused to execute arbitrary code on Azure VMs.
 references:
     - https://support.scythe.io/knowledge/azure-resource-group-backdoor
+    - https://attack.mitre.org/techniques/T1580/
 author: Tyler Casey, SCYTHE
 date: 2024-03-28
+modified: 2026-01-23
 tags:
     - attack.discovery
     - attack.t1580
     - attack.t1087.004
+    - attack.execution
+    - attack.t1059
 logsource:
     product: windows
     category: process_creation
 detection:
-    selection:
+    selection_az:
+        Image|endswith:
+            - '\az.cmd'
+            - '\az.exe'
+        CommandLine|contains: ' az '
+    selection_execution_commands:
         CommandLine|contains:
-            - 'az vm run-command'
+            - 'az vm run-command invoke'
+            - 'az vm run-command create'
+            - 'az vmss run-command invoke'
+    selection_discovery_commands:
+        CommandLine|contains:
             - 'az vm show'
-            - 'az network nic'
-            - 'az network nsg'
-            - 'az network public-ip'
             - 'az vm list'
-    condition: selection
+            - 'az network nic show'
+            - 'az network nsg show'
+            - 'az network public-ip list'
+            - 'az ad user list'
+            - 'az ad group list'
+            - 'az role assignment list'
+            - 'az keyvault list'
+            - 'az keyvault secret list'
+            - 'az storage account list'
+            - 'az storage account keys list'
+    filter_automation_accounts:
+        User|contains:
+            - 'svc_'
+            - 'azure-pipelines'
+            - 'devops'
+    filter_parent_devtools:
+        ParentImage|contains:
+            - '\Visual Studio\'
+            - '\Azure Data Studio\'
+            - '\Code.exe'
+    condition: (selection_az or selection_execution_commands or selection_discovery_commands) and not 1 of filter_*
 falsepositives:
     - Legitimate Azure administration and automation
-level: low
+    - Azure DevOps pipelines
+    - Infrastructure as Code deployments
+level: medium

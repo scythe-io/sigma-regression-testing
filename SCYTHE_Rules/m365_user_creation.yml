@@ -4,8 +4,10 @@ status: experimental
 description: Detects user account creation events in Microsoft 365 via the Unified Audit Log. Adversaries may create rogue accounts in cloud environments to establish persistent access or facilitate lateral movement.
 references:
     - https://support.scythe.io/knowledge/m365
+    - https://attack.mitre.org/techniques/T1136/003/
 author: Tyler Casey, SCYTHE
 date: 2024-03-27
+modified: 2026-01-23
 tags:
     - attack.persistence
     - attack.t1136.003
@@ -15,9 +17,29 @@ logsource:
 detection:
     selection:
         EventSource: 'UnifiedAuditLog'
-        Operation|contains: 'User added'
-    condition: selection
+    selection_operations:
+        Operation:
+            - 'Add user.'
+            - 'Add user'
+            - 'UserAdded'
+            - 'Add member to group.'
+    filter_sync_accounts:
+        UserId|contains:
+            - 'Sync_'
+            - 'AADConnect'
+            - 'DVEB-SPRBX'
+    filter_service_principals:
+        ActorType: 'ServicePrincipal'
+    selection_admin_role:
+        ModifiedProperties|contains:
+            - 'Global Administrator'
+            - 'Exchange Administrator'
+            - 'Security Administrator'
+            - 'User Administrator'
+            - 'Privileged Role Administrator'
+    condition: (selection and selection_operations and not 1 of filter_*) or (selection and selection_operations and selection_admin_role)
 falsepositives:
     - Normal user provisioning by administrators
     - Automated user onboarding processes
-level: low
+    - Azure AD Connect synchronization
+level: medium

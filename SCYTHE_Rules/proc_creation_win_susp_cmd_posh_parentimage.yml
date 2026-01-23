@@ -1,11 +1,13 @@
 title: Command Shell Spawned from Non-Standard Parent Location
 id: 03aa33d7-758c-43e4-9016-520239272a43
 status: experimental
-description: Detects CMD or PowerShell execution as a child process of an application not running from System32 or Program Files directories. This pattern may indicate malware or malicious scripts spawning command shells for further execution.
+description: Detects CMD or PowerShell execution as a child process of an application not running from standard system directories. This pattern may indicate malware or malicious scripts spawning command shells for further execution.
 references:
     - https://support.scythe.io/knowledge/volt-typhoon
+    - https://attack.mitre.org/techniques/T1059/001/
 author: Tyler Casey, SCYTHE
 date: 2024-04-24
+modified: 2026-01-23
 tags:
     - attack.execution
     - attack.t1059.001
@@ -19,15 +21,42 @@ detection:
             - '\powershell.exe'
             - '\pwsh.exe'
             - '\cmd.exe'
-    filter_main_standard_parents:
+    filter_standard_paths:
         ParentImage|contains:
             - '\Windows\System32\'
             - '\Windows\SysWOW64\'
             - '\Program Files\'
             - '\Program Files (x86)\'
-    condition: selection_shells and not filter_main_standard_parents
+            - '\Windows\WinSxS\'
+    filter_user_apps:
+        ParentImage|contains:
+            - '\AppData\Local\Microsoft\Teams\'
+            - '\AppData\Local\slack\'
+            - '\AppData\Local\Discord\'
+            - '\AppData\Local\Programs\Microsoft VS Code\'
+            - '\AppData\Local\GitHubDesktop\'
+    filter_dev_tools:
+        ParentImage|contains:
+            - '\Git\'
+            - '\nodejs\'
+            - '\Python'
+            - '\JetBrains\'
+    filter_browser_based:
+        ParentImage|endswith:
+            - '\chrome.exe'
+            - '\msedge.exe'
+            - '\firefox.exe'
+    selection_suspicious_paths:
+        ParentImage|contains:
+            - '\Users\Public\'
+            - '\ProgramData\'
+            - '\Temp\'
+            - '\Downloads\'
+            - '\AppData\Local\Temp\'
+            - '\Windows\Temp\'
+    condition: (selection_shells and not 1 of filter_*) or (selection_shells and selection_suspicious_paths)
 falsepositives:
     - Legitimate applications from non-standard locations spawning shells
-    - Development tools
+    - Development tools not in filter list
     - Portable applications
 level: medium

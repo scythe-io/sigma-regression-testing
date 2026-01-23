@@ -1,11 +1,13 @@
-title: Systemd Service Unit File Creation
+title: Suspicious Systemd Service Unit File Creation
 id: b1aa3509-82c0-423c-ac80-262a25b0e0f4
 status: experimental
-description: Detects file creation events in /etc/systemd/system/ directory. Adversaries may create malicious systemd service unit files in this location to establish persistence, ensuring their payloads execute automatically on system startup.
+description: Detects file creation events in systemd directories from non-package manager processes. Adversaries may create malicious systemd service unit files to establish persistence, ensuring their payloads execute automatically on system startup.
 references:
     - https://support.scythe.io/knowledge/systemd-persistence
+    - https://attack.mitre.org/techniques/T1543/002/
 author: Tyler Casey, SCYTHE
 date: 2024-06-28
+modified: 2026-01-23
 tags:
     - attack.persistence
     - attack.t1543.002
@@ -14,9 +16,51 @@ logsource:
     product: linux
 detection:
     selection:
-        TargetFilename|startswith: '/etc/systemd/system'
-    condition: selection
+        TargetFilename|startswith:
+            - '/etc/systemd/system/'
+            - '/usr/lib/systemd/system/'
+            - '/lib/systemd/system/'
+            - '/run/systemd/system/'
+            - '~/.config/systemd/user/'
+    filter_package_managers:
+        Image|endswith:
+            - '/apt'
+            - '/apt-get'
+            - '/dpkg'
+            - '/yum'
+            - '/dnf'
+            - '/rpm'
+            - '/pacman'
+            - '/zypper'
+            - '/snap'
+            - '/snapd'
+            - '/flatpak'
+    filter_package_manager_paths:
+        Image|contains:
+            - '/usr/lib/apt/'
+            - '/var/lib/dpkg/'
+            - '/usr/share/dpkg/'
+    filter_system_services:
+        Image|endswith:
+            - '/systemctl'
+            - '/systemd'
+            - '/packagekitd'
+    filter_config_management:
+        Image|endswith:
+            - '/ansible'
+            - '/python'
+            - '/puppet'
+            - '/chef-client'
+            - '/salt-minion'
+    selection_suspicious_locations:
+        TargetFilename|contains:
+            - '/tmp/'
+            - '/var/tmp/'
+            - '/dev/shm/'
+    selection_suspicious_names:
+        TargetFilename|re: '/[a-z0-9]{16,}\.service$'
+    condition: (selection and not 1 of filter_*) or (selection and 1 of selection_suspicious_*)
 falsepositives:
-    - Legitimate service installation by administrators
-    - Package manager installing services
-level: low
+    - Custom service installation by administrators
+    - Third-party software installers
+level: medium

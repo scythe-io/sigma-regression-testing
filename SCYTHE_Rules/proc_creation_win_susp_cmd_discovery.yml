@@ -1,11 +1,13 @@
 title: Discovery Commands Spawned by Non-Shell Parent Process
 id: 8e2ad471-257f-49f3-8e45-0da1ec8a62b9
 status: experimental
-description: Detects execution of common discovery commands (whoami, ipconfig, hostname) by processes whose parent is not a standard command shell. This may indicate malware performing automated reconnaissance without user interaction.
+description: Detects execution of common discovery commands by processes whose parent is not a standard command shell. This may indicate malware performing automated reconnaissance without user interaction.
 references:
     - https://support.scythe.io/knowledge/march-2024-ioc-applejeus
+    - https://attack.mitre.org/techniques/T1033/
 author: Tyler Casey, SCYTHE
 date: 2024-03-13
+modified: 2026-01-23
 tags:
     - attack.discovery
     - attack.t1033
@@ -20,13 +22,37 @@ detection:
             - '\whoami.exe'
             - '\ipconfig.exe'
             - '\hostname.exe'
-    filter_main_shells:
+            - '\systeminfo.exe'
+            - '\tasklist.exe'
+            - '\quser.exe'
+            - '\query.exe'
+    filter_shells:
         ParentImage|endswith:
             - '\cmd.exe'
             - '\powershell.exe'
             - '\pwsh.exe'
-    condition: selection_discovery and not filter_main_shells
+            - '\WindowsTerminal.exe'
+            - '\ConEmu.exe'
+            - '\ConEmu64.exe'
+            - '\Code.exe'
+    filter_system_processes:
+        ParentImage|endswith:
+            - '\svchost.exe'
+            - '\services.exe'
+            - '\wmiprvse.exe'
+    filter_admin_tools:
+        ParentImage|contains:
+            - '\Program Files\Microsoft Configuration Manager\'
+            - '\Program Files (x86)\Microsoft Configuration Manager\'
+            - '\Windows\CCM\'
+            - '\Program Files\SolarWinds\'
+            - '\Program Files\ManageEngine\'
+    filter_remote_access:
+        ParentImage|endswith:
+            - '\mstsc.exe'
+            - '\rdpclip.exe'
+    condition: selection_discovery and not 1 of filter_*
 falsepositives:
     - Legitimate applications spawning discovery commands
-    - System management software
+    - Custom system management software
 level: medium

@@ -1,14 +1,18 @@
-title: File Permission Change to Executable via Chmod
+title: Suspicious File Permission Change to Executable via Chmod
 id: 1162a55c-b682-4833-8e9e-bb4b6ce947b9
 status: experimental
-description: Detects chmod commands that add executable permissions to files (+x, 777, 755, 644). While chmod is commonly used for legitimate purposes, adversaries may use it to make downloaded payloads or scripts executable before execution.
+description: Detects chmod commands that add executable permissions to files in suspicious locations or from suspicious contexts. Adversaries commonly use chmod to make downloaded payloads or scripts executable before execution.
 references:
     - https://support.scythe.io/knowledge/systemd-persistence
+    - https://attack.mitre.org/techniques/T1222/002/
 author: Tyler Casey, SCYTHE
 date: 2024-06-28
+modified: 2026-01-23
 tags:
-    - attack.t1059.004
+    - attack.defense_evasion
     - attack.t1222.002
+    - attack.execution
+    - attack.t1059.004
 logsource:
     category: process_creation
     product: linux
@@ -20,8 +24,45 @@ detection:
             - '+x'
             - '777'
             - '755'
-    condition: all of selection_*
+            - '700'
+            - '711'
+            - 'a+x'
+            - 'u+x'
+    filter_package_managers:
+        ParentImage|endswith:
+            - '/apt'
+            - '/apt-get'
+            - '/dpkg'
+            - '/yum'
+            - '/dnf'
+            - '/rpm'
+            - '/pacman'
+            - '/zypper'
+            - '/pip'
+            - '/pip3'
+            - '/npm'
+    filter_package_scripts:
+        ParentImage|contains:
+            - '/var/lib/dpkg/'
+            - '/usr/lib/apt/'
+    filter_config_management:
+        ParentImage|endswith:
+            - '/ansible'
+            - '/puppet'
+            - '/chef-client'
+            - '/salt-minion'
+    selection_suspicious_paths:
+        CommandLine|contains:
+            - '/tmp/'
+            - '/var/tmp/'
+            - '/dev/shm/'
+            - '/home/'
+            - '/.local/'
+            - '/run/user/'
+            - '/Downloads/'
+    condition: (all of selection_* and not 1 of filter_*) or (selection_img and selection_permissions and selection_suspicious_paths)
 falsepositives:
     - Legitimate software installation scripts
     - System administration tasks
-level: low
+    - CI/CD pipelines
+level: medium

@@ -4,8 +4,10 @@ status: experimental
 description: Detects mailbox permission delegation operations in Microsoft 365 audit logs. Adversaries may add themselves as owners or delegates to mailboxes to maintain persistent access to email communications for intelligence gathering.
 references:
     - https://support.scythe.io/knowledge/m365
+    - https://attack.mitre.org/techniques/T1098/002/
 author: Tyler Casey, SCYTHE
 date: 2024-03-27
+modified: 2026-01-23
 tags:
     - attack.persistence
     - attack.t1098.002
@@ -15,10 +17,27 @@ logsource:
 detection:
     selection:
         EventSource: 'UnifiedAuditLog'
-        Operation|contains:
+    selection_operations:
+        Operation:
+            - 'Add-MailboxPermission'
+            - 'Set-MailboxFolderPermission'
+            - 'Add-RecipientPermission'
+            - 'Set-Mailbox'
             - 'Add owner to application'
-            - 'delegate mailbox permissions'
-    condition: selection
+            - 'Add delegated permission grant'
+            - 'Add app role assignment grant to user'
+    filter_system_accounts:
+        UserId|contains:
+            - 'DVEB-SPRBX'
+            - 'ServiceAccount'
+            - 'sync_'
+    selection_suspicious_permissions:
+        Parameters|contains:
+            - 'FullAccess'
+            - 'SendAs'
+            - 'SendOnBehalf'
+    condition: selection and selection_operations and not filter_system_accounts
 falsepositives:
     - Legitimate mailbox permission delegation by administrators
+    - Automated provisioning systems
 level: medium

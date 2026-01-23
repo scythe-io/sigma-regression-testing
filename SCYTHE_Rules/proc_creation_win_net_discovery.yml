@@ -1,11 +1,13 @@
 title: Domain Discovery via NET Command
 id: 4b512931-574c-4faf-a579-af1040f6d8db
 status: experimental
-description: Detects execution of net.exe or net1.exe with parameters commonly used for Active Directory enumeration (admins, users, computers, /domain). Adversaries use these commands to gather information about domain accounts and groups.
+description: Detects execution of net.exe or net1.exe with parameters commonly used for Active Directory enumeration. Adversaries use these commands to gather information about domain accounts, groups, and resources.
 references:
     - https://www.mandiant.com/resources/blog/session-hijacking-citrix-cve-2023-4966
+    - https://attack.mitre.org/techniques/T1069/002/
 author: Tyler Casey, SCYTHE
 date: 2024-02-13
+modified: 2026-01-23
 tags:
     - attack.discovery
     - attack.t1069.002
@@ -18,13 +20,34 @@ detection:
         Image|endswith:
             - '\net.exe'
             - '\net1.exe'
-    selection_params:
+    selection_domain_enum:
         CommandLine|contains:
-            - 'admins'
-            - 'users'
-            - 'computers'
-            - '/domain'
-    condition: all of selection_*
+            - ' group /domain'
+            - ' user /domain'
+            - ' localgroup administrators'
+            - ' group "Domain Admins"'
+            - ' group "Enterprise Admins"'
+            - ' group "Domain Controllers"'
+            - ' group "Domain Computers"'
+            - ' accounts /domain'
+            - ' view /domain'
+    selection_share_enum:
+        CommandLine|contains:
+            - ' share'
+            - ' session'
+            - ' use'
+    filter_parent_system:
+        ParentImage|endswith:
+            - '\services.exe'
+            - '\svchost.exe'
+    filter_parent_admin_tools:
+        ParentImage|contains:
+            - '\Program Files\Microsoft Configuration Manager\'
+            - '\Program Files (x86)\Microsoft Configuration Manager\'
+            - '\Program Files\SolarWinds\'
+            - '\Program Files\ManageEngine\'
+    condition: (selection_net and selection_domain_enum and not 1 of filter_*) or (selection_net and selection_share_enum and not 1 of filter_*)
 falsepositives:
     - Legitimate domain administration tasks
+    - Enterprise management software
 level: medium

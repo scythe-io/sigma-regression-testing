@@ -1,12 +1,14 @@
 title: Conti Ransomware Discovery Commands
 id: 384d2e63-ff68-43d9-a332-0d3f80d12e58
 status: experimental
-description: Detects execution of discovery commands commonly associated with Conti ransomware operators during the reconnaissance phase. These commands gather network configuration, system information, and user context.
+description: Detects execution of discovery commands commonly associated with Conti ransomware operators during the reconnaissance phase. These commands gather network configuration, system information, and user context. Single command execution is informational; multiple commands in sequence indicate potential reconnaissance activity.
 references:
     - https://support.scythe.io/knowledge/conti-ransomware
     - https://thedfirreport.com/2021/05/12/conti-ransomware/
+    - https://attack.mitre.org/techniques/T1016/
 author: Tyler Casey, SCYTHE
 date: 2024-02-09
+modified: 2026-01-23
 tags:
     - attack.discovery
     - attack.t1016
@@ -26,8 +28,28 @@ detection:
         Image|endswith:
             - '\net.exe'
             - '\net1.exe'
-    condition: 1 of selection_*
+        CommandLine|contains:
+            - ' view'
+            - ' user'
+            - ' group'
+            - ' localgroup'
+            - ' share'
+            - ' session'
+    filter_parent_system:
+        ParentImage|endswith:
+            - '\svchost.exe'
+            - '\services.exe'
+            - '\msiexec.exe'
+    filter_parent_admin_tools:
+        ParentImage|contains:
+            - '\Program Files\Microsoft Configuration Manager\'
+            - '\Program Files (x86)\Microsoft Configuration Manager\'
+            - '\Program Files\SCCM\'
+            - '\Program Files\SolarWinds\'
+            - '\Program Files (x86)\SolarWinds\'
+    condition: (1 of selection_*) and not 1 of filter_*
 falsepositives:
     - System administration tasks
     - Troubleshooting activities
+    - Enterprise monitoring agents
 level: low

@@ -1,16 +1,19 @@
-title: Suspicious Command Shell Spawned by PDF Viewer
+title: Suspicious Process Spawned by PDF Viewer
 id: 9e1ab35a-abc8-48f7-8b9e-320da08bed16
 status: experimental
-description: Detects command shell processes (cmd.exe, powershell.exe) spawned by PDF viewer applications while a PDF file is open. This behavior may indicate exploitation of PDF vulnerabilities or malicious PDF documents executing embedded code.
+description: Detects suspicious processes spawned by PDF viewer applications while a PDF file is open. This behavior may indicate exploitation of PDF vulnerabilities or malicious PDF documents executing embedded code.
 references:
     - https://support.scythe.io/knowledge/empower-threat-feb2024-coldriver-spica
+    - https://attack.mitre.org/techniques/T1204/002/
 author: Tyler Casey, SCYTHE
 date: 2024-02-28
+modified: 2026-01-23
 tags:
     - attack.execution
     - attack.t1059.001
     - attack.t1059.003
     - attack.t1204.002
+    - attack.initial_access
 logsource:
     product: windows
     category: process_creation
@@ -20,16 +23,35 @@ detection:
             - '\AcroRd32.exe'
             - '\Acrobat.exe'
             - '\FoxitReader.exe'
+            - '\FoxitPDFReader.exe'
             - '\SumatraPDF.exe'
-            - '\msedge.exe'
+            - '\PDFXEdit.exe'
+            - '\PdfXchangeViewer.exe'
     selection_pdf:
         ParentCommandLine|contains: '.pdf'
-    selection_child:
+    selection_shells:
         Image|endswith:
             - '\cmd.exe'
             - '\powershell.exe'
             - '\pwsh.exe'
-    condition: all of selection_*
+            - '\wscript.exe'
+            - '\cscript.exe'
+            - '\mshta.exe'
+            - '\rundll32.exe'
+            - '\regsvr32.exe'
+    selection_lolbins:
+        Image|endswith:
+            - '\certutil.exe'
+            - '\bitsadmin.exe'
+            - '\curl.exe'
+            - '\wget.exe'
+    filter_print_operations:
+        CommandLine|contains:
+            - 'PrintTo'
+            - '/print'
+            - 'SplWow64'
+    condition: (selection_parent and selection_pdf and selection_shells and not filter_print_operations) or (selection_parent and selection_pdf and selection_lolbins)
 falsepositives:
     - Legitimate PDF features executing helper scripts
+    - PDF form submission scripts
 level: high
