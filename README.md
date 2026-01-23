@@ -62,7 +62,7 @@ sigma convert -t microsoft365defender SCYTHE_Rules/*.yml
 
 ## Repository Structure
 
-```
+```text
 .
 ├── SCYTHE_Rules/              # Sigma detection rules
 │   ├── proc_creation_*.yml    # Process creation rules
@@ -102,7 +102,7 @@ Automatically validates rules on every code change.
 
 **Pipeline:**
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │  VALIDATE JOB (runs on every PR and push)                   │
 ├─────────────────────────────────────────────────────────────┤
@@ -135,7 +135,7 @@ A complete detection engineering pipeline for deploying Sigma rules to Splunk an
 
 ### Pipeline Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │  CONVERT JOB                                                │
 ├─────────────────────────────────────────────────────────────┤
@@ -297,7 +297,7 @@ Automated sync and deployment tooling coming soon.
 
 ### Naming Convention
 
-```
+```text
 <logsource>_<platform>_<description>.yml
 
 Examples:
