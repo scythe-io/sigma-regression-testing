@@ -1,6 +1,6 @@
 # SCYTHE Sigma Detection Rules
 
-A curated collection of Sigma detection rules developed by SCYTHE for threat detection and hunting. These rules are designed to detect adversary techniques, malware behaviors, and suspicious activity across Windows, Linux, and Microsoft 365 environments.
+A detection engineering pipeline for developing, validating, deploying, and testing Sigma rules. This project includes a curated collection of detection rules for Windows, Linux, and Microsoft 365 environments, along with automated tooling to convert rules to Splunk format, deploy them via REST API, and validate detections using Atomic Red Team tests.
 
 > **New here?** See [OVERVIEW.md](OVERVIEW.md) for a plain-English explanation of the project, pipeline flowcharts, and testing status.
 
