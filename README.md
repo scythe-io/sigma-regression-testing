@@ -6,8 +6,8 @@ A curated collection of Sigma detection rules developed by SCYTHE for threat det
 
 | Metric | Count |
 |--------|-------|
-| **Total Rules** | 62 |
-| **Windows Rules** | 43 |
+| **Total Rules** | 61 |
+| **Windows Rules** | 42 |
 | **Linux Rules** | 13 |
 | **M365/Cloud Rules** | 6 |
 
@@ -15,7 +15,7 @@ A curated collection of Sigma detection rules developed by SCYTHE for threat det
 
 | Category | Description | Count |
 |----------|-------------|-------|
-| `proc_creation` | Process creation events | 42 |
+| `proc_creation` | Process creation events | 41 |
 | `file_event` | File system activity | 7 |
 | `reg_set` | Registry modifications | 4 |
 | `m365_*` | Microsoft 365 audit logs | 3 |
