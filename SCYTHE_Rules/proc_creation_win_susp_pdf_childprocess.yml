@@ -9,11 +9,9 @@ author: Tyler Casey, SCYTHE
 date: 2024-02-28
 modified: 2026-01-23
 tags:
-    - attack.execution
     - attack.t1059.001
     - attack.t1059.003
     - attack.t1204.002
-    - attack.initial_access
 logsource:
     product: windows
     category: process_creation

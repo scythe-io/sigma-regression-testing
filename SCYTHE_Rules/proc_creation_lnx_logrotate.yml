@@ -10,7 +10,6 @@ author: Tyler Casey, SCYTHE
 date: 2024-10-03
 modified: 2026-01-23
 tags:
-    - attack.privilege_escalation
     - attack.t1059.004
     - attack.t1053.003
 logsource:

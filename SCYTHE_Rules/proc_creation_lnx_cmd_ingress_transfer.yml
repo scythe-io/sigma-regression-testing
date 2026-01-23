@@ -9,9 +9,7 @@ author: Tyler Casey, SCYTHE
 date: 2024-06-28
 modified: 2026-01-23
 tags:
-    - attack.command_and_control
     - attack.t1105
-    - attack.exfiltration
     - attack.t1048
 logsource:
     category: process_creation

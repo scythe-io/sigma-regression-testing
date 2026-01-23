@@ -14,7 +14,6 @@ author: Tyler Casey, SCYTHE
 date: 2024-04-24
 modified: 2026-01-23
 tags:
-    - attack.defense_evasion
     - attack.t1070.001
 logsource:
     product: windows

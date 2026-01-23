@@ -9,7 +9,6 @@ author: Tyler Casey, SCYTHE
 date: 2024-03-27
 modified: 2026-01-23
 tags:
-    - attack.persistence
     - attack.t1098.002
 logsource:
     product: m365
@@ -36,7 +35,7 @@ detection:
             - 'FullAccess'
             - 'SendAs'
             - 'SendOnBehalf'
-    condition: selection and selection_operations and not filter_system_accounts
+    condition: selection and selection_operations and selection_suspicious_permissions and not filter_system_accounts
 falsepositives:
     - Legitimate mailbox permission delegation by administrators
     - Automated provisioning systems

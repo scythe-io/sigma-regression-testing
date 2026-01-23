@@ -9,9 +9,7 @@ author: Tyler Casey, SCYTHE
 date: 2024-09-04
 modified: 2026-01-23
 tags:
-    - attack.execution
     - attack.t1610
-    - attack.defense_evasion
     - attack.t1612
 logsource:
     category: process_creation
