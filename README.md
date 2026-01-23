@@ -2,6 +2,8 @@
 
 A curated collection of Sigma detection rules developed by SCYTHE for threat detection and hunting. These rules are designed to detect adversary techniques, malware behaviors, and suspicious activity across Windows, Linux, and Microsoft 365 environments.
 
+> **New here?** See [OVERVIEW.md](OVERVIEW.md) for a plain-English explanation of the project, pipeline flowcharts, and testing status.
+
 ## Overview
 
 | Metric | Count |
