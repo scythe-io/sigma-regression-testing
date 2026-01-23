@@ -69,10 +69,12 @@ sigma convert -t microsoft365defender SCYTHE_Rules/*.yml
 │   ├── net_connection_*.yml   # Network rules
 │   └── m365_*.yml             # Microsoft 365 rules
 ├── scripts/
-│   └── sync-aurora-rules.ps1  # Aurora endpoint sync script
+│   └── update-readme-stats.py # Auto-update README statistics
+├── wip/                       # Work in progress (not production ready)
+│   └── aurora/                # Aurora EDR integration (coming soon)
 └── .github/workflows/
     ├── sigma-validate.yml     # CI validation workflow
-    └── deploy-rules.yml       # Deployment workflow
+    └── deploy-rules.yml       # Deployment workflow (WIP)
 ```
 
 ## CI/CD Pipeline
@@ -111,69 +113,17 @@ Automatically validates rules on every code change.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Deployment Workflow (`deploy-rules.yml`)
+### Deployment Workflow (`deploy-rules.yml`) - WIP
 
-Template for deploying validated rules to endpoints.
+> **Status: Work in Progress** - Template available but not yet configured for production use.
 
-**Triggers:**
-- Manual only (workflow_dispatch)
-- Choose environment: `staging` or `production`
-- Option for dry-run
-
-**Pipeline:**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  VALIDATE-FIRST JOB                                         │
-├─────────────────────────────────────────────────────────────┤
-│  1. Run sigma check on all rules                            │
-│  2. If validation fails → ABORT deployment                  │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          ▼ (only if validation passes)
-┌─────────────────────────────────────────────────────────────┐
-│  DEPLOY JOB                                                 │
-├─────────────────────────────────────────────────────────────┤
-│  1. Package rules                                           │
-│  2. Deploy via Azure Blob / AWS S3 / SSH (configure one)    │
-│  3. Create deployment summary                               │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### End-to-End Flow
-
-```
-Developer pushes rule change
-            │
-            ▼
-┌───────────────────────┐
-│  PR Created           │
-│  sigma-validate runs  │──── FAIL ───→ PR blocked, fix required
-└───────────────────────┘
-            │
-          PASS
-            │
-            ▼
-┌───────────────────────┐
-│  PR Merged to main    │
-│  Release artifact     │
-│  created              │
-└───────────────────────┘
-            │
-            ▼
-┌───────────────────────┐
-│  Manual trigger       │
-│  deploy-rules.yml     │──→ Rules pushed to file share/cloud
-└───────────────────────┘
-            │
-            ▼
-┌───────────────────────┐
-│  Endpoints pull       │
-│  new rules            │
-└───────────────────────┘
-```
+Template for deploying validated rules to endpoints. Supports Azure Blob, AWS S3, and SSH deployment options.
 
 ## Aurora EDR Integration
+
+> **Status: Work in Progress**
+>
+> Aurora integration is under development. See `wip/aurora/` for preliminary scripts.
 
 These rules are compatible with [Aurora Agent](https://www.nextron-systems.com/aurora/) from Nextron Systems.
 
@@ -186,35 +136,7 @@ Copy-Item .\SCYTHE_Rules\*.yml "C:\Program Files\Aurora-Agent\custom-signatures\
 Restart-Service "intend Aurora Agent Service"
 ```
 
-### Automated Sync from GitHub
-
-Use the included sync script to automatically pull rules from this repository:
-
-```powershell
-# One-time sync
-.\scripts\sync-aurora-rules.ps1 -GitHubRepo "scythe-io/Sigma"
-
-# Sync and restart Aurora
-.\scripts\sync-aurora-rules.ps1 -GitHubRepo "scythe-io/Sigma" -RestartAurora $true
-
-# Custom branch
-.\scripts\sync-aurora-rules.ps1 -GitHubRepo "scythe-io/Sigma" -Branch "develop"
-```
-
-### Scheduled Task Setup
-
-Create a scheduled task to keep rules updated:
-
-```powershell
-$action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
-    -Argument "-ExecutionPolicy Bypass -File 'C:\Scripts\sync-aurora-rules.ps1' -GitHubRepo 'scythe-io/Sigma' -RestartAurora `$true"
-
-$trigger = New-ScheduledTaskTrigger -Daily -At "3:00AM"
-
-Register-ScheduledTask -TaskName "Sync-Aurora-Sigma-Rules" `
-    -Action $action -Trigger $trigger -RunLevel Highest `
-    -User "SYSTEM"
-```
+Automated sync and deployment tooling coming soon.
 
 ## Contributing
 
