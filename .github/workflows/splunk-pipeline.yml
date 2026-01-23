@@ -137,8 +137,10 @@ jobs:
           echo "- **Searches:** $SEARCH_COUNT" >> $GITHUB_STEP_SUMMARY
 
   regression-test:
-    name: Run Regression Tests
-    runs-on: ubuntu-latest
+    name: Run Regression Tests (Atomic Red Team)
+    # NOTE: Requires a self-hosted Windows runner with Atomic Red Team installed
+    # For GitHub-hosted runners, run regression tests locally instead
+    runs-on: windows-latest
     needs: deploy
     if: |
       github.event_name == 'workflow_dispatch' &&
@@ -155,9 +157,21 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           pip install requests pyyaml urllib3
+
+      - name: Check Atomic Red Team installation
+        shell: pwsh
+        run: |
+          $module = Get-Module -ListAvailable -Name Invoke-AtomicRedTeam
+          if (-not $module) {
+            Write-Host "::warning::Atomic Red Team not installed. Installing..."
+            IEX (IWR 'https://raw.githubusercontent.com/redcanaryco/invoke-atomicredteam/master/install-atomicredteam.ps1' -UseBasicParsing)
+            Install-AtomicRedTeam -getAtomics -Force
+          } else {
+            Write-Host "Atomic Red Team is installed: $($module.Version)"
+          }
 
       - name: Run regression tests
         env:
@@ -165,28 +179,18 @@ jobs:
           SPLUNK_PORT: ${{ secrets.SPLUNK_PORT }}
           SPLUNK_USER: ${{ secrets.SPLUNK_USER }}
           SPLUNK_PASSWORD: ${{ secrets.SPLUNK_PASSWORD }}
-          SCYTHE_API_URL: ${{ secrets.SCYTHE_API_URL }}
-          SCYTHE_API_KEY: ${{ secrets.SCYTHE_API_KEY }}
         run: |
-          echo "=== Running Regression Tests ==="
+          echo "=== Running Atomic Red Team Regression Tests ==="
 
-          # Check if test config exists
-          if [ ! -f "tests/test_mapping.yaml" ]; then
-            echo "No test configuration found. Creating example..."
-            python scripts/regression-test.py --dry-run --test-config tests/test_mapping.yaml
-            echo "::warning::No test_mapping.yaml found. Example created."
-            exit 0
-          fi
-
-          python scripts/regression-test.py \
-            --splunk-host "$SPLUNK_HOST" \
-            --splunk-port "$SPLUNK_PORT" \
-            --splunk-user "$SPLUNK_USER" \
-            --splunk-pass "$SPLUNK_PASSWORD" \
-            --scythe-url "$SCYTHE_API_URL" \
-            --scythe-key "$SCYTHE_API_KEY" \
-            --test-config tests/test_mapping.yaml \
-            --output test_results.json
+          python scripts/regression-test.py `
+            --splunk-host "$env:SPLUNK_HOST" `
+            --splunk-port "$env:SPLUNK_PORT" `
+            --splunk-user "$env:SPLUNK_USER" `
+            --splunk-pass "$env:SPLUNK_PASSWORD" `
+            --test-config tests/art_mapping.yaml `
+            --output test_results.json `
+            --skip-atomic-check
+        shell: pwsh
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -198,23 +202,27 @@ jobs:
 
       - name: Report test results
         if: always()
+        shell: pwsh
         run: |
-          if [ -f "test_results.json" ]; then
-            PASSED=$(jq '.summary.passed' test_results.json)
-            FAILED=$(jq '.summary.failed' test_results.json)
-            RATE=$(jq -r '.summary.pass_rate' test_results.json)
+          if (Test-Path "test_results.json") {
+            $results = Get-Content test_results.json | ConvertFrom-Json
+            $passed = $results.summary.passed
+            $failed = $results.summary.failed
+            $rate = $results.summary.pass_rate
 
-            echo "## Regression Test Results" >> $GITHUB_STEP_SUMMARY
-            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
-            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
-            echo "| Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
-            echo "| Pass Rate | $RATE |" >> $GITHUB_STEP_SUMMARY
+            "## Regression Test Results (Atomic Red Team)" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "| Metric | Value |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "|--------|-------|" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "| Passed | $passed |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "| Failed | $failed |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "| Pass Rate | $rate |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
 
-            if [ "$FAILED" -gt 0 ]; then
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "### Failed Tests" >> $GITHUB_STEP_SUMMARY
-              jq -r '.results[] | select(.passed == false) | "- **\(.test_name)**: Missing rules: \(.missing_rules | join(", "))"' test_results.json >> $GITHUB_STEP_SUMMARY
+            if ($failed -gt 0) {
+              "" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+              "### Failed Tests" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+              foreach ($test in $results.results | Where-Object { -not $_.passed }) {
+                "- **$($test.test_name)** ($($test.technique_id)): Missing rules: $($test.missing_rules -join ', ')" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+              }
               exit 1
-            fi
-          fi
+            }
+          }

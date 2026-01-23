@@ -72,12 +72,13 @@ sigma convert -t microsoft365defender SCYTHE_Rules/*.yml
 │   ├── update-readme-stats.py # Auto-update README statistics
 │   ├── convert-to-splunk.py   # Convert rules to Splunk format
 │   ├── deploy-to-splunk.ps1   # Deploy saved searches to Splunk
-│   └── regression-test.py     # SCYTHE integration regression testing
+│   └── regression-test.py     # Atomic Red Team regression testing
 ├── tests/
-│   └── test_mapping.yaml      # SCYTHE action to rule mappings
+│   └── art_mapping.yaml       # Atomic Red Team test to rule mappings
 ├── splunk_output/             # Generated Splunk artifacts (gitignored)
 ├── wip/                       # Work in progress (not production ready)
-│   └── aurora/                # Aurora EDR integration (coming soon)
+│   ├── aurora/                # Aurora EDR integration (coming soon)
+│   └── scythe/                # SCYTHE integration (coming soon)
 └── .github/workflows/
     ├── sigma-validate.yml     # CI validation workflow
     ├── splunk-pipeline.yml    # Splunk detection pipeline
@@ -128,7 +129,7 @@ Template for deploying validated rules to endpoints. Supports Azure Blob, AWS S3
 
 ## Splunk Detection Pipeline
 
-A complete detection engineering pipeline for deploying Sigma rules to Splunk and validating them with SCYTHE atomic actions.
+A complete detection engineering pipeline for deploying Sigma rules to Splunk and validating them with [Atomic Red Team](https://atomicredteam.io/) tests.
 
 ### Pipeline Overview
 
@@ -155,7 +156,7 @@ A complete detection engineering pipeline for deploying Sigma rules to Splunk an
 ┌─────────────────────────────────────────────────────────────┐
 │  REGRESSION TEST JOB                                        │
 ├─────────────────────────────────────────────────────────────┤
-│  1. Execute SCYTHE atomic actions                           │
+│  1. Execute Atomic Red Team tests on target endpoint        │
 │  2. Query Splunk for triggered rules                        │
 │  3. Report coverage and failures                            │
 └─────────────────────────────────────────────────────────────┘
@@ -189,18 +190,38 @@ python scripts/convert-to-splunk.py -i SCYTHE_Rules -o splunk_output
 .\scripts\deploy-to-splunk.ps1 -SplunkHost splunk.company.com -Username admin -DryRun
 ```
 
-**Run regression tests:**
+**Run regression tests with Atomic Red Team:**
 
 ```bash
 # Dry run (show test cases without executing)
-python scripts/regression-test.py --dry-run --test-config tests/test_mapping.yaml
+python scripts/regression-test.py --dry-run --test-config tests/art_mapping.yaml
 
-# Run tests with SCYTHE
+# Run tests locally (requires Atomic Red Team installed)
 python scripts/regression-test.py \
   --splunk-host splunk.company.com \
   --splunk-user admin \
-  --scythe-url https://scythe.company.com \
-  --test-config tests/test_mapping.yaml
+  --test-config tests/art_mapping.yaml
+
+# Run tests on remote target via WinRM
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --splunk-user admin \
+  --target 192.168.1.100 \
+  --winrm-user Administrator \
+  --test-config tests/art_mapping.yaml
+```
+
+### Installing Atomic Red Team
+
+On the test endpoint, install Atomic Red Team:
+
+```powershell
+# Install Invoke-AtomicRedTeam module
+IEX (IWR 'https://raw.githubusercontent.com/redcanaryco/invoke-atomicredteam/master/install-atomicredteam.ps1' -UseBasicParsing)
+Install-AtomicRedTeam -getAtomics
+
+# Verify installation
+Get-Module -ListAvailable -Name Invoke-AtomicRedTeam
 ```
 
 ### GitHub Actions Setup
@@ -214,23 +235,26 @@ To enable automated deployment, configure these secrets in your repository:
 | `SPLUNK_USER` | Splunk admin username |
 | `SPLUNK_PASSWORD` | Splunk admin password |
 | `SPLUNK_APP` | Target app (default: search) |
-| `SCYTHE_API_URL` | SCYTHE API endpoint |
-| `SCYTHE_API_KEY` | SCYTHE API key |
 
 ### Test Mapping Configuration
 
-Define test cases in `tests/test_mapping.yaml`:
+Define test cases in `tests/art_mapping.yaml` to map Atomic Red Team tests to expected Sigma rules:
 
 ```yaml
 tests:
-  - name: "Event Log Clearing"
-    description: "Test detection of Windows event log clearing"
-    scythe_action: "run"
-    scythe_params:
-      command: "wevtutil cl Security"
+  - name: "Clear Security Event Log"
+    description: "Validates detection of log clearing via wevtutil"
+    technique_id: "T1070.001"
+    atomic_test_guid: "e6abb60e-26b8-41da-8aae-0c35174b0967"
     expected_rules:
       - "Windows Event Log Cleared"
-    mitre_technique: "T1070.001"
+    cleanup: false
+```
+
+Find Atomic Test GUIDs at [atomicredteam.io](https://atomicredteam.io/atomics/) or by running:
+
+```powershell
+Invoke-AtomicTest T1070.001 -ShowDetailsBrief
 ```
 
 ## Aurora EDR Integration
@@ -286,6 +310,7 @@ Examples:
 - [Sigma Specification](https://github.com/SigmaHQ/sigma-specification)
 - [Sigma Rule Repository](https://github.com/SigmaHQ/sigma)
 - [MITRE ATT&CK](https://attack.mitre.org/)
+- [Atomic Red Team](https://atomicredteam.io/)
 - [Aurora Agent Documentation](https://aurora-agent-manual.nextron-systems.com/)
 - [SCYTHE Platform](https://www.scythe.io/)
 
