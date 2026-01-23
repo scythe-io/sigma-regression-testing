@@ -68,7 +68,7 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 
 ## Pipeline & Script Flowchart
 
-```
+```text
                                     ┌─────────────────────────────────┐
                                     │      WRITE SIGMA RULES          │
                                     │   (SCYTHE_Rules/*.yml)          │
@@ -165,7 +165,7 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 
 ## Simple Version (The Big Picture)
 
-```
+```text
   ┌─────────┐      ┌──────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐
   │  Write  │      │ Validate │      │ Convert │      │ Deploy  │      │  Test   │
   │  Rules  │─────►│  (CI)    │─────►│   to    │─────►│   to    │─────►│  with   │
