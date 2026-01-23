@@ -1,0 +1,129 @@
+name: Deploy Sigma Rules
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      dry_run:
+        description: 'Dry run (no actual deployment)'
+        required: false
+        default: true
+        type: boolean
+
+# This workflow provides a template for deploying rules to Aurora endpoints
+# Customize the deployment steps based on your infrastructure:
+# - Azure Blob Storage for endpoint pull
+# - AWS S3 bucket
+# - Network file share
+# - Direct endpoint push via SSH/WinRM
+
+jobs:
+  validate-first:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install sigma-cli
+        run: pip install sigma-cli pysigma
+
+      - name: Validate rules before deployment
+        run: |
+          echo "=== Pre-deployment Validation ==="
+          sigma check SCYTHE_Rules/*.yml
+
+          OUTPUT=$(sigma check SCYTHE_Rules/*.yml 2>&1)
+          if echo "$OUTPUT" | grep -q "Found [1-9][0-9]* errors"; then
+            echo "::error::Validation failed - aborting deployment"
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    needs: validate-first
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare rules package
+        run: |
+          mkdir -p deploy-package
+          cp SCYTHE_Rules/*.yml deploy-package/
+          echo "Prepared $(ls -1 deploy-package/*.yml | wc -l) rules for deployment"
+
+      # ==============================================================
+      # OPTION 1: Deploy to Azure Blob Storage
+      # Endpoints can pull from this location
+      # ==============================================================
+      # - name: Deploy to Azure Blob Storage
+      #   uses: azure/CLI@v1
+      #   with:
+      #     inlineScript: |
+      #       az storage blob upload-batch \
+      #         --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT }} \
+      #         --destination sigma-rules \
+      #         --source deploy-package/ \
+      #         --overwrite
+
+      # ==============================================================
+      # OPTION 2: Deploy to AWS S3
+      # ==============================================================
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: us-east-1
+      #
+      # - name: Deploy to S3
+      #   run: |
+      #     aws s3 sync deploy-package/ s3://${{ secrets.S3_BUCKET }}/sigma-rules/ --delete
+
+      # ==============================================================
+      # OPTION 3: Deploy via SSH to file server
+      # ==============================================================
+      # - name: Deploy via SSH
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.DEPLOY_HOST }}
+      #     username: ${{ secrets.DEPLOY_USER }}
+      #     key: ${{ secrets.DEPLOY_SSH_KEY }}
+      #     source: "deploy-package/*"
+      #     target: "/share/sigma-rules/"
+      #     strip_components: 1
+
+      - name: Deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run:** ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Rules Deployed:** $(ls -1 deploy-package/*.yml | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Rules Included" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ls -1 deploy-package/*.yml >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Dry run notice
+        if: inputs.dry_run
+        run: |
+          echo "::warning::This was a dry run - no rules were actually deployed"
+          echo "::warning::Uncomment the deployment option in the workflow to enable actual deployment"

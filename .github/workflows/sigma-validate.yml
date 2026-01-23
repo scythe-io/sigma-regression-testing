@@ -1,0 +1,93 @@
+name: Sigma Rules Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'SCYTHE_Rules/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'SCYTHE_Rules/**'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate Sigma Rules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pySigma and sigma-cli
+        run: |
+          pip install sigma-cli pysigma
+
+      - name: Validate Sigma rules
+        run: |
+          echo "=== Validating Sigma Rules ==="
+          sigma check SCYTHE_Rules/*.yml
+
+      - name: Check for rule errors
+        run: |
+          # Run sigma check and capture output
+          OUTPUT=$(sigma check SCYTHE_Rules/*.yml 2>&1)
+          echo "$OUTPUT"
+
+          # Check for errors
+          if echo "$OUTPUT" | grep -q "Found [1-9][0-9]* errors"; then
+            echo "::error::Sigma rule validation failed with errors"
+            exit 1
+          fi
+
+          # Check for condition errors
+          if echo "$OUTPUT" | grep -q "Found [0-9]* errors, [1-9][0-9]* condition errors"; then
+            echo "::error::Sigma rule validation failed with condition errors"
+            exit 1
+          fi
+
+          echo "::notice::All Sigma rules validated successfully"
+
+      - name: Count rules
+        run: |
+          RULE_COUNT=$(ls -1 SCYTHE_Rules/*.yml 2>/dev/null | wc -l)
+          echo "::notice::Total rules: $RULE_COUNT"
+          echo "## Sigma Rules Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Rules:** $RULE_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Validation:** Passed" >> $GITHUB_STEP_SUMMARY
+
+  release:
+    name: Create Release Artifact
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Package rules
+        run: |
+          mkdir -p release
+          cp SCYTHE_Rules/*.yml release/
+          cd release && zip -r ../sigma-rules-${{ github.sha }}.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sigma-rules-${{ github.run_number }}
+          path: release/*.yml
+          retention-days: 90
+
+      - name: Create release summary
+        run: |
+          echo "## Release Artifact Created" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact:** sigma-rules-${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Rules included:** $(ls -1 release/*.yml | wc -l)" >> $GITHUB_STEP_SUMMARY
