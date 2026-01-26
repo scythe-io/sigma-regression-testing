@@ -164,7 +164,7 @@ Passing tests include:
 │   └──────────────────────────────────────────────────────────────────────┘   │
 │                                                                               │
 │   ┌──────────────────────────────────────────────────────────────────────┐   │
-│   │  regression-test.py  (Not yet tested)                                 │   │
+│   │  regression-test.py                                                    │   │
 │   │  ──────────────────                                                   │   │
 │   │                                                                       │   │
 │   │  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────┐    │   │
@@ -213,7 +213,7 @@ Passing tests include:
 |--------|----------|---------|
 | `convert-to-splunk.py` | Python | Converts Sigma YAML rules to Splunk `savedsearches.conf` format |
 | `deploy-to-splunk.ps1` | PowerShell | Deploys saved searches to Splunk via REST API |
-| `regression-test.py` | Python | Runs Atomic Red Team tests and validates Splunk detections |
+| `regression-test.py` | Python | Runs Atomic Red Team tests, validates Splunk detections, generates JSON and HTML reports |
 | `update-readme-stats.py` | Python | Updates README.md with current rule counts |
 
 ---
@@ -243,8 +243,18 @@ The `regression-test.py` script supports two modes:
 
 ### Test Output
 
-Results are saved to `test_results.json` with:
+The script generates two output files:
+
+**`test_results.json`** - Machine-readable results containing:
 - Pass/fail status for each test
 - Expected vs triggered rules
 - Splunk search queries and results
 - Execution time and lookback window
+
+**`test_results.html`** - Interactive HTML report with:
+- Summary cards (total tests, passed, failed, pass rate)
+- Visual progress bar showing pass/fail ratio
+- Filterable table (filter by status or search text)
+- Detailed view of expected, triggered, and missing rules for each test
+
+Open `test_results.html` in any browser to review results interactively.

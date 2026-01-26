@@ -222,6 +222,19 @@ python scripts/regression-test.py \
   --batch
 ```
 
+**Test Output:**
+
+The regression test script generates two output files:
+
+- `test_results.json` - Machine-readable results with pass/fail status, queries, and timing
+- `test_results.html` - Interactive HTML report with filtering and visual summary
+
+The HTML report includes:
+- Summary cards showing total tests, passed, failed, and pass rate
+- Visual progress bar for quick pass/fail overview
+- Filterable table by status (All/Passed/Failed) and search text
+- Details for each test including expected rules, triggered rules, and missing rules
+
 ### Installing Atomic Red Team
 
 On the test endpoint, install Atomic Red Team to a system-wide location (required for WinRM access):
