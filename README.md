@@ -23,8 +23,8 @@ A detection engineering pipeline for developing, validating, deploying, and test
 | `m365_*` | Microsoft 365 audit logs | 3 |
 | `net_connection` | Network connections | 2 |
 | `web_sharepoint` | SharePoint web activity | 2 |
-| `file_creation` | File creation events | 1 |
 | `security_*` | Security event logs | 1 |
+| `file_creation` | File creation events | 1 |
 
 ## Rule Design Philosophy
 
