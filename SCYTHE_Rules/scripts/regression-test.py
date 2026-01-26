@@ -327,13 +327,339 @@ def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
     )
 
 
-def generate_report(results: List[TestResult], output_path: str):
-    """Generate JSON test report."""
+def generate_html_report(results: List[TestResult], output_path: str, timestamp: str):
+    """Generate interactive HTML report with filtering."""
     passed = sum(1 for r in results if r.passed)
     failed = len(results) - passed
+    pass_rate = (passed / len(results) * 100) if results else 0
+
+    # Build table rows
+    table_rows = []
+    for r in results:
+        status_class = "passed" if r.passed else "failed"
+        status_text = "PASS" if r.passed else "FAIL"
+        expected = ", ".join(r.expected_rules)
+        triggered = ", ".join(r.triggered_rules) if r.triggered_rules else "-"
+        missing = ", ".join(r.missing_rules) if r.missing_rules else "-"
+        error_text = r.error[:100] + "..." if r.error and len(r.error) > 100 else (r.error or "-")
+
+        table_rows.append(f'''
+            <tr class="{status_class}" data-status="{status_text}" data-technique="{r.technique_id}">
+                <td><span class="status-badge {status_class}">{status_text}</span></td>
+                <td>{r.test_name}</td>
+                <td><code>{r.technique_id}</code></td>
+                <td>{expected}</td>
+                <td>{triggered}</td>
+                <td>{missing}</td>
+                <td class="error-cell" title="{r.error or ''}">{error_text}</td>
+            </tr>
+        ''')
+
+    html_content = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sigma Regression Test Report</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }}
+        .container {{
+            max-width: 1400px;
+            margin: 0 auto;
+        }}
+        header {{
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }}
+        header h1 {{
+            font-size: 28px;
+            margin-bottom: 5px;
+        }}
+        header .timestamp {{
+            opacity: 0.7;
+            font-size: 14px;
+        }}
+        .summary-cards {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }}
+        .card {{
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }}
+        .card h3 {{
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 8px;
+        }}
+        .card .value {{
+            font-size: 36px;
+            font-weight: 700;
+        }}
+        .card.passed .value {{ color: #22c55e; }}
+        .card.failed .value {{ color: #ef4444; }}
+        .card.total .value {{ color: #3b82f6; }}
+        .card.rate .value {{ color: #8b5cf6; }}
+        .progress-section {{
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }}
+        .progress-bar {{
+            height: 24px;
+            background: #fee2e2;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 10px;
+        }}
+        .progress-fill {{
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+            border-radius: 12px;
+            transition: width 0.5s ease;
+        }}
+        .filters {{
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }}
+        .filters label {{
+            font-weight: 500;
+            color: #555;
+        }}
+        .filters select, .filters input {{
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }}
+        .filters input {{
+            width: 250px;
+        }}
+        .table-container {{
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+        }}
+        th {{
+            background: #f8fafc;
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+        }}
+        td {{
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: top;
+        }}
+        tr:hover {{
+            background: #f8fafc;
+        }}
+        tr.hidden {{
+            display: none;
+        }}
+        .status-badge {{
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }}
+        .status-badge.passed {{
+            background: #dcfce7;
+            color: #166534;
+        }}
+        .status-badge.failed {{
+            background: #fee2e2;
+            color: #991b1b;
+        }}
+        code {{
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }}
+        .error-cell {{
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #991b1b;
+            font-size: 13px;
+        }}
+        .legend {{
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 14px;
+        }}
+        .legend-item {{
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }}
+        .legend-color {{
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }}
+        .legend-color.pass {{ background: #22c55e; }}
+        .legend-color.fail {{ background: #ef4444; }}
+        footer {{
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sigma Regression Test Report</h1>
+            <div class="timestamp">Generated: {timestamp}</div>
+        </header>
+
+        <div class="summary-cards">
+            <div class="card total">
+                <h3>Total Tests</h3>
+                <div class="value">{len(results)}</div>
+            </div>
+            <div class="card passed">
+                <h3>Passed</h3>
+                <div class="value">{passed}</div>
+            </div>
+            <div class="card failed">
+                <h3>Failed</h3>
+                <div class="value">{failed}</div>
+            </div>
+            <div class="card rate">
+                <h3>Pass Rate</h3>
+                <div class="value">{pass_rate:.1f}%</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <strong>Overall Progress</strong>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {pass_rate}%"></div>
+            </div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-color pass"></div> Passed ({passed})</div>
+                <div class="legend-item"><div class="legend-color fail"></div> Failed ({failed})</div>
+            </div>
+        </div>
+
+        <div class="filters">
+            <label>Filter by Status:</label>
+            <select id="statusFilter" onchange="filterTable()">
+                <option value="all">All</option>
+                <option value="PASS">Passed Only</option>
+                <option value="FAIL">Failed Only</option>
+            </select>
+            <label>Search:</label>
+            <input type="text" id="searchInput" placeholder="Search test name or technique..." onkeyup="filterTable()">
+        </div>
+
+        <div class="table-container">
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Test Name</th>
+                        <th>Technique</th>
+                        <th>Expected Rules</th>
+                        <th>Triggered Rules</th>
+                        <th>Missing Rules</th>
+                        <th>Error</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {"".join(table_rows)}
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            <p>Generated by Sigma Regression Test Framework</p>
+        </footer>
+    </div>
+
+    <script>
+        function filterTable() {{
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#resultsTable tbody tr');
+
+            rows.forEach(row => {{
+                const status = row.getAttribute('data-status');
+                const technique = row.getAttribute('data-technique').toLowerCase();
+                const testName = row.cells[1].textContent.toLowerCase();
+
+                const matchesStatus = statusFilter === 'all' || status === statusFilter;
+                const matchesSearch = testName.includes(searchText) || technique.includes(searchText);
+
+                if (matchesStatus && matchesSearch) {{
+                    row.classList.remove('hidden');
+                }} else {{
+                    row.classList.add('hidden');
+                }}
+            }});
+        }}
+    </script>
+</body>
+</html>
+'''
+
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+
+
+def generate_report(results: List[TestResult], output_path: str):
+    """Generate JSON and HTML test reports."""
+    passed = sum(1 for r in results if r.passed)
+    failed = len(results) - passed
+    timestamp = datetime.now().isoformat()
 
     report = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": timestamp,
         "summary": {
             "total_tests": len(results),
             "passed": passed,
@@ -359,8 +685,15 @@ def generate_report(results: List[TestResult], output_path: str):
             "error": r.error
         })
 
+    # Write JSON report
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2)
+
+    # Write HTML report
+    html_path = output_path.replace('.json', '.html')
+    if html_path == output_path:
+        html_path = output_path + '.html'
+    generate_html_report(results, html_path, timestamp)
 
     # Print summary
     print("\n" + "="*60)
@@ -381,7 +714,9 @@ def generate_report(results: List[TestResult], output_path: str):
                 if r.error:
                     print(f"    Error: {r.error}")
 
-    print(f"\nReport saved to: {output_path}")
+    print(f"\nReports saved to:")
+    print(f"  JSON: {output_path}")
+    print(f"  HTML: {html_path}")
     return report
 
 
