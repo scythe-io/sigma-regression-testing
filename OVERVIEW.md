@@ -163,7 +163,7 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 
 ---
 
-## Simple Version (The Big Picture)
+## Simple Version
 
 ```text
   ┌─────────┐      ┌──────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐
