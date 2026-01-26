@@ -1,0 +1,8 @@
+# Single test for validation
+tests:
+  - name: "Remote System Discovery (net view)"
+    description: "Uses net view to enumerate network shares"
+    technique_id: "T1018"
+    atomic_test_guid: "f1bf6c8f-9016-4edf-aff9-80b65f5d711f"
+    expected_rules:
+      - "Domain Discovery via NET Command"

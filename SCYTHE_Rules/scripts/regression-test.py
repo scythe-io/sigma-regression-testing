@@ -56,6 +56,9 @@ class TestResult:
     missing_rules: List[str]
     execution_time: float
     error: Optional[str] = None
+    search_queries: Dict[str, str] = field(default_factory=dict)  # rule_name -> query
+    search_results: Dict[str, List[Dict]] = field(default_factory=dict)  # rule_name -> results
+    lookback_seconds: int = 0
 
 
 class SplunkClient:
@@ -71,8 +74,10 @@ class SplunkClient:
     def search(self, query: str, earliest: str = "-15m", latest: str = "now") -> List[Dict]:
         """Execute a Splunk search and return results."""
         create_url = f"{self.base_url}/services/search/jobs"
+        # Don't add 'search' prefix if query already starts with a pipe command
+        search_query = query if query.strip().startswith('|') else f"search {query}"
         data = {
-            "search": f"search {query}",
+            "search": search_query,
             "earliest_time": earliest,
             "latest_time": latest,
             "output_mode": "json"
@@ -114,14 +119,15 @@ class SplunkClient:
         results = self.search(query, earliest=earliest)
         return [r["savedsearch_name"] for r in results]
 
-    def search_saved_search(self, search_name: str, earliest: str = "-15m") -> int:
-        """Run a saved search and return result count."""
+    def search_saved_search(self, search_name: str, earliest: str = "-15m") -> tuple:
+        """Run a saved search and return (count, query, results)."""
         query = f'| savedsearch "{search_name}"'
         try:
             results = self.search(query, earliest=earliest)
-            return len(results)
-        except Exception:
-            return 0
+            return len(results), query, results
+        except Exception as e:
+            print(f"      [DEBUG] Error running saved search: {e}")
+            return 0, query, []
 
 
 class AtomicRunner:
@@ -141,17 +147,21 @@ class AtomicRunner:
 
         Returns dict with 'success' bool and 'output' or 'error'.
         """
-        # Build the PowerShell command
-        ps_cmd = f'Invoke-AtomicTest {technique_id} -TestGuids {test_guid}'
+        # Build the PowerShell command (import module first for remote sessions)
+        ps_cmd = 'Import-Module "C:\\AtomicRedTeam\\invoke-atomicredteam\\Invoke-AtomicRedTeam.psd1" -Force; '
+        ps_cmd += f'Invoke-AtomicTest {technique_id} -TestGuids {test_guid}'
 
         if input_args:
-            args_str = ','.join(f'{k}="{v}"' for k, v in input_args.items())
-            ps_cmd += f' -InputArguments @{{{args_str}}}'
+            # PowerShell hashtables use semicolons as separators
+            args_str = ';'.join(f'{k}="{v}"' for k, v in input_args.items())
+            ps_cmd += f' -InputArgs @{{{args_str}}}'
 
-        if not cleanup:
-            ps_cmd += ' -NoCleanup'
+        # -Cleanup runs cleanup commands after the test
+        # -Force bypasses confirmation prompts
+        if cleanup:
+            ps_cmd += ' -Cleanup'
 
-        ps_cmd += ' -Confirm:$false'
+        ps_cmd += ' -Force'
 
         if self.target == "localhost" and not self.use_winrm:
             return self._run_local(ps_cmd)
@@ -201,9 +211,9 @@ class AtomicRunner:
 
     def check_atomic_installed(self) -> bool:
         """Verify Atomic Red Team is installed."""
-        check_cmd = "Get-Module -ListAvailable -Name Invoke-AtomicRedTeam"
+        check_cmd = 'Import-Module "C:\\AtomicRedTeam\\invoke-atomicredteam\\Invoke-AtomicRedTeam.psd1" -Force; Get-Command Invoke-AtomicTest'
         result = self._run_local(check_cmd) if self.target == "localhost" else self._run_remote(check_cmd)
-        return result["success"] and "Invoke-AtomicRedTeam" in result.get("output", "")
+        return result["success"] and "Invoke-AtomicTest" in result.get("output", "")
 
 
 def load_test_config(config_path: str) -> List[AtomicTest]:
@@ -266,16 +276,21 @@ def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
         time.sleep(wait_time)
 
         # Check for triggered rules
-        print("[*] Checking Splunk for triggered rules...")
+        lookback = wait_time + 60
+        print(f"[*] Checking Splunk for triggered rules (lookback: {lookback}s)...")
 
         # Method 1: Check triggered alerts
-        all_alerts = splunk.get_triggered_alerts(earliest=f"-{wait_time + 60}s")
+        all_alerts = splunk.get_triggered_alerts(earliest=f"-{lookback}s")
         triggered_rules = [r for r in all_alerts if r in test.expected_rules]
 
         # Method 2: Also run each expected saved search directly
+        search_queries = {}
+        search_results = {}
         for rule_name in test.expected_rules:
             if rule_name not in triggered_rules:
-                count = splunk.search_saved_search(rule_name, earliest=f"-{wait_time + 60}s")
+                count, query, results = splunk.search_saved_search(rule_name, earliest=f"-{lookback}s")
+                search_queries[rule_name] = query
+                search_results[rule_name] = results
                 if count > 0:
                     triggered_rules.append(rule_name)
                     print(f"    [+] {rule_name}: {count} matches")
@@ -285,6 +300,9 @@ def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
     except Exception as e:
         error = str(e)
         print(f"[-] Error: {error}")
+        search_queries = {}
+        search_results = {}
+        lookback = wait_time + 60
 
     execution_time = time.time() - start_time
     missing_rules = [r for r in test.expected_rules if r not in triggered_rules]
@@ -302,7 +320,10 @@ def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
         triggered_rules=triggered_rules,
         missing_rules=missing_rules,
         execution_time=execution_time,
-        error=error
+        error=error,
+        search_queries=search_queries,
+        search_results=search_results,
+        lookback_seconds=lookback
     )
 
 
@@ -332,6 +353,9 @@ def generate_report(results: List[TestResult], output_path: str):
             "triggered_rules": r.triggered_rules,
             "missing_rules": r.missing_rules,
             "execution_time_seconds": round(r.execution_time, 2),
+            "lookback_seconds": r.lookback_seconds,
+            "search_queries": r.search_queries,
+            "search_results": r.search_results,
             "error": r.error
         })
 
@@ -418,6 +442,7 @@ def main():
     parser.add_argument('--wait-time', type=int, default=60, help='Seconds to wait for log ingestion')
     parser.add_argument('--dry-run', action='store_true', help='Show tests without executing')
     parser.add_argument('--skip-atomic-check', action='store_true', help='Skip Atomic RT install check')
+    parser.add_argument('--batch', action='store_true', help='Run all atomics first, then check rules (faster)')
 
     args = parser.parse_args()
 
@@ -474,9 +499,79 @@ def main():
 
     # Run tests
     results = []
-    for test in tests:
-        result = run_test(test, splunk, runner, args.wait_time)
-        results.append(result)
+
+    if args.batch:
+        # Batch mode: run all atomics first, then check all rules
+        print("\n" + "="*60)
+        print("BATCH MODE: Running all atomic tests first...")
+        print("="*60)
+
+        execution_results = {}
+        for test in tests:
+            print(f"\n[+] Executing: {test.name} ({test.technique_id})")
+            result = runner.run_atomic(
+                test.technique_id,
+                test.atomic_test_guid,
+                test.input_arguments,
+                test.cleanup
+            )
+            execution_results[test.name] = result
+            if result["success"]:
+                print(f"    OK")
+            else:
+                print(f"    FAILED: {result.get('error', 'Unknown')[:50]}")
+
+        print(f"\n[*] All atomics executed. Waiting {args.wait_time}s for log ingestion...")
+        time.sleep(args.wait_time)
+
+        print("\n" + "="*60)
+        print("Checking Splunk for triggered rules...")
+        print("="*60)
+
+        lookback = args.wait_time + 120  # Extra buffer for batch mode
+
+        for test in tests:
+            start_time = time.time()
+            exec_result = execution_results[test.name]
+            error = exec_result.get('error') if not exec_result['success'] else None
+
+            triggered_rules = []
+            search_queries = {}
+            search_results = {}
+
+            print(f"\n[*] {test.name}")
+            for rule_name in test.expected_rules:
+                count, query, rule_results = splunk.search_saved_search(rule_name, earliest=f"-{lookback}s")
+                search_queries[rule_name] = query
+                search_results[rule_name] = rule_results
+                if count > 0:
+                    triggered_rules.append(rule_name)
+                    print(f"    [+] {rule_name}: {count} matches")
+                else:
+                    print(f"    [-] {rule_name}: no matches")
+
+            missing_rules = [r for r in test.expected_rules if r not in triggered_rules]
+            passed = len(missing_rules) == 0 and error is None
+
+            results.append(TestResult(
+                test_name=test.name,
+                technique_id=test.technique_id,
+                atomic_guid=test.atomic_test_guid,
+                passed=passed,
+                expected_rules=test.expected_rules,
+                triggered_rules=triggered_rules,
+                missing_rules=missing_rules,
+                execution_time=time.time() - start_time,
+                error=error,
+                search_queries=search_queries,
+                search_results=search_results,
+                lookback_seconds=lookback
+            ))
+    else:
+        # Sequential mode: run each test and wait
+        for test in tests:
+            result = run_test(test, splunk, runner, args.wait_time)
+            results.append(result)
 
     # Generate report
     generate_report(results, args.output)

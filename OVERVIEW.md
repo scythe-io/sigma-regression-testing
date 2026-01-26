@@ -49,20 +49,37 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 | **Rule Upload** | Tested | Added 61 Sigma rules to the repository |
 | **Validation** | Tested | All rules pass `sigma check` - no syntax errors |
 | **Conversion** | Tested | Ran `convert-to-splunk.py` to generate `savedsearches.conf` with 43 Windows rules |
-| **Push to Splunk** | Tested | Deployed all 43 saved searches to `splunk.example.com` using `deploy-to-splunk.ps1` |
+| **Push to Splunk** | Tested | Deployed all 43 saved searches to Splunk using `deploy-to-splunk.ps1` |
+| **Regression Testing** | Tested | Ran 19 Atomic Red Team tests against Splunk rules via WinRM |
+
+### Regression Test Results
+
+Using the `regression-test.py` script with Atomic Red Team on a remote Windows target:
+
+- **7 tests passed** - Rules correctly detected the atomic attacks
+- **12 tests need tuning** - Atomics ran but rules didn't trigger (useful for identifying rule gaps)
+
+Passing tests include:
+- Event log clearing detection
+- Discovery command detection (systeminfo, whoami, ipconfig, hostname)
+- PowerShell download cradle detection
 
 ### Issues We Fixed Along the Way
 1. **PowerShell `$Host` conflict** - The deploy script used a reserved variable name; renamed to `$Server`
 2. **Missing .NET class** - `System.Web.HttpUtility` wasn't available in PowerShell Core; switched to `[uri]::EscapeDataString()`
 3. **Multi-line search parsing** - Searches with line continuations (`\`) weren't being parsed correctly; fixed the parser
+4. **ART module loading** - WinRM sessions need explicit module import from `C:\AtomicRedTeam`
+5. **Splunk REST API query syntax** - Fixed `| savedsearch` commands to not add `search` prefix
+6. **ART parameter changes** - Updated to use `-Force` and `-InputArgs` for newer ART versions
 
 ---
 
-## What's Next (Not Yet Tested)
+## What's Next
 
-- **Regression testing** - Running Atomic Red Team attacks and verifying Splunk detects them
-- **Scheduled alerts** - Enabling the saved searches to run automatically and send notifications
-- **Aurora EDR integration** - Deploying rules to endpoint detection agents
+- **Rule tuning** - Investigate why some rules didn't fire and adjust detection logic
+- **Scheduled alerts** - Enable the saved searches to run automatically and send notifications
+- **Aurora EDR integration** - Deploy rules to endpoint detection agents
+- **CI/CD integration** - Automate regression testing on rule changes
 
 ---
 
@@ -198,3 +215,36 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 | `deploy-to-splunk.ps1` | PowerShell | Deploys saved searches to Splunk via REST API |
 | `regression-test.py` | Python | Runs Atomic Red Team tests and validates Splunk detections |
 | `update-readme-stats.py` | Python | Updates README.md with current rule counts |
+
+---
+
+## Regression Testing Details
+
+The `regression-test.py` script supports two modes:
+
+**Sequential Mode** (default): Runs each atomic test, waits for logs, checks the rule, then moves to the next test. Thorough but slow.
+
+**Batch Mode** (`--batch`): Runs all atomic tests back-to-back, waits once for log ingestion, then checks all rules at the end. Much faster for large test suites.
+
+### Key Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `--splunk-host` | Splunk server hostname |
+| `--splunk-user` | Splunk username |
+| `--target` | Remote Windows target IP for atomic tests |
+| `--winrm-user` | WinRM username (e.g., `DOMAIN\Administrator`) |
+| `--winrm-pass` | WinRM password |
+| `--test-config` | Path to test mapping YAML file |
+| `--wait-time` | Seconds to wait for log ingestion (default: 60) |
+| `--batch` | Run all atomics first, then check rules (faster) |
+| `--skip-atomic-check` | Skip checking if ART is installed |
+| `--dry-run` | Show tests without executing |
+
+### Test Output
+
+Results are saved to `test_results.json` with:
+- Pass/fail status for each test
+- Expected vs triggered rules
+- Splunk search queries and results
+- Execution time and lookback window

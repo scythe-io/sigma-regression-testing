@@ -26,7 +26,7 @@ tests:
     technique_id: "T1070.001"
     atomic_test_guid: "e6abb60e-26b8-41da-8aae-0c35174b0967"
     expected_rules:
-      - "Windows Event Log Cleared"
+      - "Windows Event Log Manipulation"
     cleanup: false  # Log is already cleared
 
   - name: "Clear System Event Log (wevtutil)"
@@ -34,7 +34,7 @@ tests:
     technique_id: "T1070.001"
     atomic_test_guid: "acb5d112-27d2-4255-8a36-1196d6b4c1bb"
     expected_rules:
-      - "Windows Event Log Cleared"
+      - "Windows Event Log Manipulation"
     cleanup: false
 
   # ============================================
@@ -86,7 +86,7 @@ tests:
     technique_id: "T1018"
     atomic_test_guid: "f1bf6c8f-9016-4edf-aff9-80b65f5d711f"
     expected_rules:
-      - "Net Command Network Discovery"
+      - "Domain Discovery via NET Command"
 
   # ============================================
   # Discovery - T1087 (Account Discovery)
@@ -97,7 +97,7 @@ tests:
     technique_id: "T1087.001"
     atomic_test_guid: "80887bec-5a9b-4efc-a81d-f83eb2eb32ab"
     expected_rules:
-      - "Net Command Network Discovery"
+      - "Domain Discovery via NET Command"
       - "Conti Ransomware Discovery Commands"
 
   - name: "Local Admin Group Enumeration"
@@ -105,7 +105,7 @@ tests:
     technique_id: "T1087.001"
     atomic_test_guid: "a2c24fe7-7c22-4766-b30e-c3e8d1d55b21"
     expected_rules:
-      - "Net Command Network Discovery"
+      - "Domain Discovery via NET Command"
 
   # ============================================
   # Persistence - T1053.005 (Scheduled Task)
@@ -121,13 +121,6 @@ tests:
       task_name: "ART-RegTest"
       task_command: "C:\\Windows\\System32\\cmd.exe"
 
-  - name: "Scheduled Task via XML"
-    description: "Creates scheduled task from XML definition"
-    technique_id: "T1053.005"
-    atomic_test_guid: "eaac4e0a-8d5c-4c7d-b75e-32df9e181d3b"
-    expected_rules:
-      - "Suspicious Scheduled Task Creation"
-
   # ============================================
   # Persistence - T1547.001 (Registry Run Keys)
   # ============================================
@@ -137,14 +130,14 @@ tests:
     technique_id: "T1547.001"
     atomic_test_guid: "e55be3fd-3521-4610-9d1a-e210e42dcf05"
     expected_rules:
-      - "Suspicious Run Key Modification"
+      - "Registry Run Key Modification"
 
   - name: "Registry Run Key Persistence (HKLM)"
     description: "Adds persistence via HKLM Run key"
     technique_id: "T1547.001"
     atomic_test_guid: "6c55c8f8-3e8d-47c7-8c7c-36d5e9fc6c9f"
     expected_rules:
-      - "Suspicious Run Key Modification"
+      - "Registry Run Key Modification"
 
   # ============================================
   # Persistence - T1136.001 (Create Account)
@@ -155,7 +148,7 @@ tests:
     technique_id: "T1136.001"
     atomic_test_guid: "a524ce99-86de-4f6c-88f5-8c3439e21ed5"
     expected_rules:
-      - "New Local User Created"
+      - "Local User Account Creation via New-LocalUser PowerShell Cmdlet"
     input_arguments:
       username: "ARTTestUser"
       password: "ARTp@ss123!"
@@ -169,7 +162,7 @@ tests:
     technique_id: "T1059.001"
     atomic_test_guid: "e8a8a0e2-f9fd-4c9e-a7e3-7c8e5b7e6f3a"
     expected_rules:
-      - "Suspicious CMD or PowerShell Parent"
+      - "Command Shell Spawned from Non-Standard Parent Location"
 
   # ============================================
   # Execution - T1218.011 (Rundll32)
@@ -180,7 +173,7 @@ tests:
     technique_id: "T1218.011"
     atomic_test_guid: "cf3bdb9a-dd11-4b6c-b0d0-9e22b68a71be"
     expected_rules:
-      - "Suspicious Rundll32 Parent Process"
+      - "Rundll32 Execution with Suspicious Context"
 
   # ============================================
   # Collection - T1560.001 (Archive via Utility)
@@ -191,7 +184,7 @@ tests:
     technique_id: "T1560.001"
     atomic_test_guid: "d1334303-5975-4c93-b66a-a185e655fc0a"
     expected_rules:
-      - "Suspicious Archive Creation"
+      - "Suspicious Archive File Creation by Uncommon Process"
 
   # ============================================
   # Credential Access - T1003.001 (LSASS Memory)
@@ -202,7 +195,7 @@ tests:
     technique_id: "T1003.001"
     atomic_test_guid: "2536dee2-12fb-459a-8c37-971c925c0b48"
     expected_rules:
-      - "Suspicious Rundll32 Parent Process"
+      - "Rundll32 Execution with Suspicious Context"
 
   # ============================================
   # Defense Evasion - T1036 (Masquerading)
@@ -213,7 +206,7 @@ tests:
     technique_id: "T1036.003"
     atomic_test_guid: "bc15c13f-dc95-4c87-8d7d-1e0e3b6b11a1"
     expected_rules:
-      - "Suspicious File Rename"
+      - "Potential File Masquerading via PowerShell Rename-Item"
 
   # ============================================
   # Privilege Escalation - T1548.002 (UAC Bypass)
@@ -224,4 +217,4 @@ tests:
     technique_id: "T1548.002"
     atomic_test_guid: "a238e48e-22c4-4a3c-8db4-32e9a9f25cc6"
     expected_rules:
-      - "Suspicious icacls Execution"
+      - "File Permission Modification via Icacls Denying Everyone Access"

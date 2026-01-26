@@ -198,32 +198,43 @@ python scripts/convert-to-splunk.py -i SCYTHE_Rules -o splunk_output
 # Dry run (show test cases without executing)
 python scripts/regression-test.py --dry-run --test-config tests/art_mapping.yaml
 
-# Run tests locally (requires Atomic Red Team installed)
-python scripts/regression-test.py \
-  --splunk-host splunk.company.com \
-  --splunk-user admin \
-  --test-config tests/art_mapping.yaml
-
-# Run tests on remote target via WinRM
+# Run tests on remote target via WinRM (sequential mode)
 python scripts/regression-test.py \
   --splunk-host splunk.company.com \
   --splunk-user admin \
   --target 192.168.1.100 \
-  --winrm-user Administrator \
-  --test-config tests/art_mapping.yaml
+  --winrm-user "DOMAIN\Administrator" \
+  --winrm-pass "password" \
+  --test-config tests/art_mapping.yaml \
+  --wait-time 60 \
+  --skip-atomic-check
+
+# Batch mode (faster - runs all tests first, then checks rules)
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --splunk-user admin \
+  --target 192.168.1.100 \
+  --winrm-user "DOMAIN\Administrator" \
+  --winrm-pass "password" \
+  --test-config tests/art_mapping.yaml \
+  --wait-time 90 \
+  --skip-atomic-check \
+  --batch
 ```
 
 ### Installing Atomic Red Team
 
-On the test endpoint, install Atomic Red Team:
+On the test endpoint, install Atomic Red Team to a system-wide location (required for WinRM access):
 
 ```powershell
-# Install Invoke-AtomicRedTeam module
+# Install Invoke-AtomicRedTeam module to C:\AtomicRedTeam
+Set-ExecutionPolicy Bypass -Scope Process -Force
 IEX (IWR 'https://raw.githubusercontent.com/redcanaryco/invoke-atomicredteam/master/install-atomicredteam.ps1' -UseBasicParsing)
-Install-AtomicRedTeam -getAtomics
+Install-AtomicRedTeam -getAtomics -Force -InstallPath "C:\AtomicRedTeam"
 
 # Verify installation
-Get-Module -ListAvailable -Name Invoke-AtomicRedTeam
+Import-Module "C:\AtomicRedTeam\invoke-atomicredteam\Invoke-AtomicRedTeam.psd1" -Force
+Get-Command Invoke-AtomicTest
 ```
 
 ### GitHub Actions Setup
@@ -249,13 +260,26 @@ tests:
     technique_id: "T1070.001"
     atomic_test_guid: "e6abb60e-26b8-41da-8aae-0c35174b0967"
     expected_rules:
-      - "Windows Event Log Cleared"
+      - "Windows Event Log Manipulation"  # Must match Splunk saved search name exactly
     cleanup: false
+
+  - name: "Create Local User Account"
+    description: "Creates a new local user"
+    technique_id: "T1136.001"
+    atomic_test_guid: "a524ce99-86de-4f6c-88f5-8c3439e21ed5"
+    expected_rules:
+      - "Local User Account Creation via New-LocalUser PowerShell Cmdlet"
+    input_arguments:
+      username: "TestUser"
+      password: "P@ssw0rd123!"
 ```
+
+**Important:** The `expected_rules` values must match the Splunk saved search names exactly. These are the Sigma rule titles from the YAML files.
 
 Find Atomic Test GUIDs at [atomicredteam.io](https://atomicredteam.io/atomics/) or by running:
 
 ```powershell
+Import-Module "C:\AtomicRedTeam\invoke-atomicredteam\Invoke-AtomicRedTeam.psd1"
 Invoke-AtomicTest T1070.001 -ShowDetailsBrief
 ```
 
