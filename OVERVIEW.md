@@ -1,4 +1,4 @@
-# Project Overview (Plain English)
+# Project Overview
 
 This document explains the Sigma detection rules project in layman's terms, including what it does, how the pipelines work, and what has been tested.
 
