@@ -1,0 +1,30 @@
+title: LockBit 3.0 Shadow Copy and Event Log Deletion
+id: 1a6dc271-1862-43ce-888d-058c47b1a113
+status: experimental
+description: Detects command execution patterns associated with LockBit 3.0 ransomware, including Volume Shadow Copy deletion via vssadmin or WMIC, and Windows Event Log clearing via wevtutil. These actions are typically performed to prevent forensic recovery and hide malicious activity.
+references:
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-075a
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/01/16
+tags:
+    - attack.impact
+    - attack.t1485
+    - attack.defense_evasion
+    - attack.t1490
+    - attack.t1070.001
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection:
+        CommandLine|contains:
+            - 'vssadmin.exe delete shadows'
+            - 'vssadmin delete shadows'
+            - 'wevtutil.exe cl'
+            - 'wevtutil cl'
+            - 'wmic.exe Shadowcopy Delete'
+            - 'wmic Shadowcopy Delete'
+    condition: selection
+falsepositives:
+    - Legitimate system administration tasks may use similar commands for maintenance.
+level: high

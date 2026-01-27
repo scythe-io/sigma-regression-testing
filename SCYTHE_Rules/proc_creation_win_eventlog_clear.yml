@@ -1,54 +1,30 @@
-title: Windows Event Log Manipulation
+title: Windows Event Log Manipulation via PowerShell
 id: 27b5f8bc-38ab-4958-8db5-4ed303ca90b4
 related:
     - id: 0f017df3-8f5a-414f-ad6b-24aff1128278
       type: derived
 status: experimental
-description: Detects execution of commands or PowerShell cmdlets used to clear, remove, or disable Windows event logs. Adversaries commonly manipulate logs to remove evidence of their activities.
+description: Detects the use of PowerShell cmdlets to clear, remove, or manipulate Windows Event Logs. Attackers commonly clear event logs to remove evidence of their activities and hinder forensic investigation.
 references:
     - https://twitter.com/oroneequalsone/status/1568432028361830402
     - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1070.001/T1070.001.md
     - https://eqllib.readthedocs.io/en/latest/analytics/5b223758-07d6-4100-9e11-238cfdd0fe97.html
-    - https://attack.mitre.org/techniques/T1070/001/
-author: Tyler Casey, SCYTHE
-date: 2024-04-24
-modified: 2026-01-23
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/04/24
 tags:
+    - attack.defense_evasion
     - attack.t1070.001
 logsource:
     product: windows
     category: process_creation
 detection:
-    selection_powershell_clear:
+    selection:
         CommandLine|contains:
             - 'Clear-EventLog'
             - 'Remove-EventLog'
             - 'Limit-EventLog'
             - 'Clear-WinEvent'
-    selection_wevtutil:
-        Image|endswith: '\wevtutil.exe'
-        CommandLine|contains:
-            - ' cl '
-            - ' clear-log '
-            - ' sl '
-            - ' set-log '
-    selection_wmic:
-        Image|endswith: '\wmic.exe'
-        CommandLine|contains:
-            - 'nteventlog'
-            - 'cleareventlog'
-    selection_disable_logging:
-        CommandLine|contains:
-            - 'Set-Service -Name EventLog -StartupType Disabled'
-            - 'Stop-Service -Name EventLog'
-            - 'sc stop eventlog'
-            - 'sc config eventlog start= disabled'
-    filter_parent_system:
-        ParentImage|endswith:
-            - '\services.exe'
-            - '\TiWorker.exe'
-    condition: (selection_powershell_clear or selection_wevtutil or selection_wmic or selection_disable_logging) and not 1 of filter_*
+    condition: selection
 falsepositives:
-    - Legitimate log maintenance by administrators
-    - Log rotation scripts
+    - System administrators performing legitimate log maintenance.
 level: high

@@ -1,25 +1,31 @@
-title: Process Execution from Windows SxS Directory
+title: Process Execution from Windows Defender NisSrv Directory
 id: b3157617-7d1d-43db-8990-16ca0a1e9d18
 status: experimental
-description: Detects process execution originating from the Windows SxS (side-by-side) assembly directory. Adversaries may abuse the SxS directory for DLL side-loading attacks by placing malicious DLLs alongside legitimate executables in this location.
+description: Detects process execution originating from the Windows Defender Network Inspection Service (NisSrv) directory. Attackers may abuse this trusted location for DLL sideloading or to evade security controls by executing malicious code from within Defender's own directory structure.
 references:
     - https://support.scythe.io/knowledge/april-2024-winsxs-sideloading
-author: Tyler Casey, SCYTHE
-date: 2024-04-22
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/04/22
 tags:
-    - attack.t1574.001
-    - attack.t1059
+    - attack.defense_evasion
+    - attack.t1574.002
+    - attack.execution
+    - attack.t1059.001
 logsource:
     product: windows
     category: process_creation
 detection:
-    selection_parent:
-        ParentImage|contains: '\Windows\WinSxS\'
-    selection_image:
-        Image|contains: '\Windows\WinSxS\'
-    filter_main_legitimate:
-        Image|endswith: '\TiWorker.exe'
-    condition: (selection_parent or selection_image) and not filter_main_legitimate
+    selection_parent_img:
+        ParentImage|contains:
+            - 'Windows Defender\NisSrv'
+    selection_img:
+        Image|contains:
+            - 'Windows Defender\NisSrv'
+    filter_legitimate:
+        Image|endswith:
+            - '\MsMpEng.exe'
+            - '\NisSrv.exe'
+    condition: (selection_parent_img or selection_img) and not filter_legitimate
 falsepositives:
-    - Legitimate Windows servicing operations via TiWorker.exe
+    - Legitimate Windows Defender Network Inspection Service operations.
 level: medium

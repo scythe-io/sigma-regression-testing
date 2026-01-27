@@ -1,0 +1,33 @@
+title: MedusaLocker Ransomware Registry Persistence
+id: cbb30fd3-b91a-4814-b79a-55e020393203
+status: experimental
+description: Detects registry modifications associated with MedusaLocker ransomware, including Run key persistence using the MSFEEditor name and enabling link connections to facilitate network share encryption.
+references:
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa22-181a
+    - https://www.picussecurity.com/resource/medusalocker-ransomware-analysis-simulation-and-mitigation
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2023/12/21
+tags:
+    - attack.persistence
+    - attack.t1547.001
+    - attack.defense_evasion
+    - attack.t1112
+logsource:
+    product: windows
+    category: registry_set
+detection:
+    selection_runkey:
+        TargetObject|contains:
+            - '\Software\Microsoft\Windows\CurrentVersion\Run\'
+        TargetObject|endswith:
+            - 'MSFEEditor'
+        Details|endswith:
+            - '.exe'
+    selection_linkconnections:
+        TargetObject|contains:
+            - '\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\EnableLinkedConnections'
+        Details: 'DWORD (0x00000001)'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate applications may create Run key entries, but the MSFEEditor name is specific to MedusaLocker.
+level: high

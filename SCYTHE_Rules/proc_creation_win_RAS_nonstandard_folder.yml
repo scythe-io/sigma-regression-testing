@@ -1,0 +1,35 @@
+title: Remote Access Software Execution from Non-Standard Directory
+id: 18145bec-4354-48ff-9446-55a8e306e53c
+related:
+    - id: 065b00ca-5d5c-4557-ac95-64a6d0b64d86
+      type: similar
+status: experimental
+description: Detects execution of remote access software (AnyDesk, TeamViewer, ScreenConnect) from directories outside their standard installation paths. ALPHV/BlackCat and Scattered Spider threat actors commonly deploy these tools from unusual locations to maintain persistent remote access while evading detection.
+references:
+    - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1219/T1219.md
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/01/31
+tags:
+    - attack.command_and_control
+    - attack.t1219
+    - attack.persistence
+    - attack.t1133
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_ras:
+        Image|endswith:
+            - '\AnyDesk.exe'
+            - '\TeamViewer.exe'
+            - '\ScreenConnect.exe'
+    filter_standard_paths:
+        Image|contains:
+            - '\AppData\'
+            - '\Program Files (x86)\'
+            - '\Program Files\'
+    condition: selection_ras and not filter_standard_paths
+falsepositives:
+    - Portable versions of remote access software used by IT support teams.
+level: high

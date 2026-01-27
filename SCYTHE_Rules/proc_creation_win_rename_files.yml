@@ -1,44 +1,43 @@
-title: Potential File Masquerading via PowerShell Rename-Item
+title: PowerShell File Masquerading Activity
 id: c3d7e891-4b2a-4f5c-9a8d-7e6f4b3c2a19
 status: experimental
-description: Detects PowerShell Rename-Item commands that may change file extensions to masquerade sensitive files. This technique is commonly used by adversaries to disguise data for exfiltration or evade detection.
+description: Detects PowerShell Rename-Item commands that change file extensions from documents to images or logs, indicative of masquerading for evasion
 references:
-    - https://support.scythe.io/
     - https://attack.mitre.org/techniques/T1036/008/
-author: Tyler Casey, SCYTHE
-date: 2024-01-16
-modified: 2026-01-23
+author: Tyler Casey, SCYTHE  
+date: 2024/01/16
 tags:
+    - attack.defense_evasion
     - attack.t1036.008
+    - attack.execution
     - attack.t1059.001
 logsource:
     product: windows
     category: process_creation
 detection:
     selection_powershell:
-        - Image|endswith:
-            - '\powershell.exe'
-            - '\pwsh.exe'
-        - OriginalFileName:
-            - 'PowerShell.EXE'
-            - 'pwsh.dll'
+        - Image|endswith: '\powershell.exe'
+        - OriginalFileName: 'PowerShell.EXE'
     selection_rename:
+        CommandLine|contains: 
+            - 'rename-item'
+            - 'ren'
+            - 'rni'
+    selection_suspicious_ext:
         CommandLine|contains:
-            - 'Rename-Item'
-            - 'Move-Item'
-            - 'ren '
-            - 'rni '
-            - 'mi '
-            - 'move '
-            - 'Copy-Item'
-            - 'copy '
-            - 'cp '
-    selection_sensitive_to_benign:
-        CommandLine|re: '\.(pdf|docx?|xlsx?|pptx?|csv|db|sql|mdb|accdb|pst|ost)\s.*\.(jpg|jpeg|png|gif|bmp|log|txt|tmp|dat|bin)'
-    selection_exe_masquerade:
-        CommandLine|re: '\.(exe|dll|ps1|bat|cmd|vbs|js)\s.*\.(jpg|jpeg|png|gif|txt|log|tmp|dat)'
-    condition: selection_powershell and selection_rename and (selection_sensitive_to_benign or selection_exe_masquerade)
+            - '.pdf '
+            - '.docx '
+            - '.xlsx '
+            - '.xls '
+    selection_target_ext:
+        CommandLine|contains:
+            - '.jpg'
+            - '.png'
+            - '.log'
+            - '.txt'
+    condition: all of selection_*
 falsepositives:
     - Legitimate file organization scripts
-    - Backup utilities renaming files
-level: high
+    - Image conversion utilities
+    - Log rotation scripts
+level: medium

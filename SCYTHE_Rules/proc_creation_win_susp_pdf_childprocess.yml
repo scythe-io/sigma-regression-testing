@@ -1,55 +1,37 @@
-title: Suspicious Process Spawned by PDF Viewer
+title: Command Shell Spawned from PDF Viewer Application
 id: 9e1ab35a-abc8-48f7-8b9e-320da08bed16
 status: experimental
-description: Detects suspicious processes spawned by PDF viewer applications while a PDF file is open. This behavior may indicate exploitation of PDF vulnerabilities or malicious PDF documents executing embedded code.
+description: Detects command shell processes (cmd.exe or PowerShell) being spawned from PDF viewer applications while processing PDF files. This behavior may indicate exploitation of a PDF viewer vulnerability or a malicious PDF document executing embedded scripts.
 references:
     - https://support.scythe.io/knowledge/empower-threat-feb2024-coldriver-spica
     - https://attack.mitre.org/techniques/T1204/002/
-author: Tyler Casey, SCYTHE
-date: 2024-02-28
-modified: 2026-01-23
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/02/28
 tags:
-    - attack.t1059.001
-    - attack.t1059.003
+    - attack.execution
+    - attack.t1059
     - attack.t1204.002
 logsource:
     product: windows
     category: process_creation
 detection:
-    selection_parent:
+    selection_parent_img:
         ParentImage|endswith:
+            - '\msedge.exe'
             - '\AcroRd32.exe'
             - '\Acrobat.exe'
             - '\FoxitReader.exe'
             - '\FoxitPDFReader.exe'
             - '\SumatraPDF.exe'
-            - '\PDFXEdit.exe'
-            - '\PdfXchangeViewer.exe'
-    selection_pdf:
-        ParentCommandLine|contains: '.pdf'
-    selection_shells:
+    selection_parentcmd:
+        ParentCommandLine|contains:
+            - '.pdf'
+    selection_img:
         Image|endswith:
             - '\cmd.exe'
             - '\powershell.exe'
             - '\pwsh.exe'
-            - '\wscript.exe'
-            - '\cscript.exe'
-            - '\mshta.exe'
-            - '\rundll32.exe'
-            - '\regsvr32.exe'
-    selection_lolbins:
-        Image|endswith:
-            - '\certutil.exe'
-            - '\bitsadmin.exe'
-            - '\curl.exe'
-            - '\wget.exe'
-    filter_print_operations:
-        CommandLine|contains:
-            - 'PrintTo'
-            - '/print'
-            - 'SplWow64'
-    condition: (selection_parent and selection_pdf and selection_shells and not filter_print_operations) or (selection_parent and selection_pdf and selection_lolbins)
+    condition: selection_parent_img and selection_parentcmd and selection_img
 falsepositives:
-    - Legitimate PDF features executing helper scripts
-    - PDF form submission scripts
+    - Legitimate PDF automation workflows that invoke command shells.
 level: high

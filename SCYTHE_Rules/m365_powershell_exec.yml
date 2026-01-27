@@ -1,0 +1,23 @@
+title: PowerShell Execution Detection
+id: 5b5296f8-82d9-472a-87c5-7a0da8c4718d
+status: experimental
+description: Detects PowerShell execution in Microsoft 365 audit logs.
+references:
+    - https://support.scythe.io/knowledge/m365-sharepoint-document-spray
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/04/29
+tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.t1059.009
+logsource:
+    category: audit
+    product: m365
+detection:
+    selection:
+        Operation|contains:
+            - 'PowerShell'
+    condition: selection
+falsepositives:
+    - Legitimate PowerShell usage
+level: low

@@ -1,0 +1,45 @@
+title: LockBit 3.0 Ransomware Registry Modifications
+id: bbe4ab32-4862-4227-a607-0f68f5bae418
+status: experimental
+description: Detects registry modifications commonly performed by LockBit 3.0 ransomware to disable security controls, including disabling SmartScreen, Windows Event Logging, Windows Defender real-time protection, Windows Firewall, and enabling automatic admin logon for persistence.
+references:
+    - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-075a
+    - https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventid=90013
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2023/12/21
+tags:
+    - attack.persistence
+    - attack.t1547.001
+    - attack.defense_evasion
+    - attack.t1562.001
+    - attack.t1562.002
+logsource:
+    product: windows
+    category: registry_set
+detection:
+    selection_smartscreen:
+        TargetObject|contains:
+            - '\SOFTWARE\Policies\Microsoft\Windows\System\EnableSmartScreen'
+        Details: 'DWORD (0x00000000)'
+    selection_eventlog:
+        TargetObject|contains:
+            - '\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Channels\'
+            - '\Enabled'
+        Details: 'DWORD (0x00000000)'
+    selection_autologon:
+        TargetObject|contains:
+            - '\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\AutoAdminLogon'
+        Details: 'DWORD (0x00000001)'
+    selection_defender:
+        TargetObject|contains:
+            - '\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection\DisableRealtimeMonitoring'
+        Details: 'DWORD (0x00000001)'
+    selection_firewall:
+        TargetObject|contains:
+            - '\SOFTWARE\Policies\Microsoft\WindowsFirewall\'
+            - 'Profile\EnableFirewall'
+        Details: 'DWORD (0x00000000)'
+    condition: 1 of selection_*
+falsepositives:
+    - Group Policy changes by administrators may modify similar registry keys.
+level: high

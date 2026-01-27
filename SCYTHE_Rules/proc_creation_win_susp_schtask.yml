@@ -1,66 +1,33 @@
-title: Suspicious Scheduled Task Creation
+title: Suspicious Scheduled Task Creation via Command Line
 id: 1c001601-0563-4458-99c2-7addad4fe601
 status: experimental
-description: Detects scheduled task creation with suspicious characteristics. Adversaries commonly abuse scheduled tasks for persistence and privilege escalation.
+description: Detects the creation of scheduled tasks via PowerShell cmdlets (New-ScheduledTask) or schtasks.exe through command shell processes. Attackers commonly use scheduled tasks to establish persistence or execute malicious payloads at specific times.
 references:
     - https://support.scythe.io/knowledge/empower-threat-feb2024-coldriver-spica
     - https://attack.mitre.org/techniques/T1053/005/
-author: Tyler Casey, SCYTHE
-date: 2024-02-28
-modified: 2026-01-23
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/02/28
 tags:
-    - attack.persistence
-    - attack.t1053.005
     - attack.execution
+    - attack.persistence
     - attack.t1059
+    - attack.t1053.005
 logsource:
     product: windows
     category: process_creation
 detection:
-    selection_schtasks:
-        Image|endswith: '\schtasks.exe'
-        CommandLine|contains: '/create'
-    selection_powershell_schtask:
+    selection_img:
         Image|endswith:
             - '\powershell.exe'
             - '\pwsh.exe'
+            - '\cmd.exe'
+    selection_cmdline:
         CommandLine|contains:
             - 'New-ScheduledTask'
             - 'Register-ScheduledTask'
-            - 'New-ScheduledTaskAction'
-    selection_suspicious_actions:
-        CommandLine|contains:
-            - 'cmd.exe'
-            - 'powershell.exe'
-            - 'pwsh.exe'
-            - 'mshta.exe'
-            - 'wscript.exe'
-            - 'cscript.exe'
-            - 'rundll32.exe'
-            - 'regsvr32.exe'
-            - 'certutil.exe'
-            - 'bitsadmin.exe'
-    selection_suspicious_paths:
-        CommandLine|contains:
-            - '\AppData\'
-            - '\Temp\'
-            - '\ProgramData\'
-            - '\Users\Public\'
-            - '%APPDATA%'
-            - '%TEMP%'
-            - '%PUBLIC%'
-    filter_parent_installers:
-        ParentImage|contains:
-            - '\Windows\Installer\'
-            - '\Program Files\'
-            - '\Program Files (x86)\'
-    filter_system_tasks:
-        CommandLine|contains:
-            - '\Microsoft\Windows\'
-            - 'MicrosoftEdgeUpdate'
-            - 'GoogleUpdate'
-    condition: ((selection_schtasks or selection_powershell_schtask) and selection_suspicious_actions and not 1 of filter_*) or ((selection_schtasks or selection_powershell_schtask) and selection_suspicious_paths and not 1 of filter_*)
+            - 'SCHTASKS'
+            - '/CREATE'
+    condition: selection_img and selection_cmdline
 falsepositives:
-    - Legitimate administrative scheduled task creation
-    - Software installation scripts
+    - IT administrators creating scheduled tasks for legitimate system maintenance.
 level: medium

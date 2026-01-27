@@ -1,0 +1,28 @@
+title: PPLBlade LSASS Protection Bypass Tool Execution
+id: 47b5cf6d-bffb-48b9-8fcc-b4b0cb0dd566
+status: experimental
+description: Detects execution of PPLBlade, a tool designed to bypass Protected Process Light (PPL) protection on LSASS to enable credential dumping. The tool uses specific command line parameters for mode selection, handle manipulation, and obfuscation that can be detected.
+references:
+    - https://github.com/tastypepperoni/PPLBlade
+    - https://tastypepperoni.medium.com/bypassing-defenders-lsass-dump-detection-and-ppl-protection-in-go-7dd85d9a32e6
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/02/05
+tags:
+    - attack.credential_access
+    - attack.t1003.001
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection_img:
+        Image|endswith:
+            - '\PPLBlade.exe'
+    selection_cmdline:
+        CommandLine|contains:
+            - '--mode'
+            - '--handle'
+            - '--obfuscate'
+    condition: selection_img and selection_cmdline
+falsepositives:
+    - Unlikely; PPLBlade is a known offensive security tool.
+level: high

@@ -1,47 +1,22 @@
-title: Suspicious Logrotate Execution
+title: Explicit logrotate Execution
 id: 57f495c9-d42d-42ce-81ca-3a795870747a
 status: experimental
-description: Detects logrotate execution outside of cron context or with custom configuration files. Adversaries may exploit logrotate misconfigurations to execute malicious binaries with elevated privileges.
+description: Detects logrotate commands being explicitly executed.  This is uncommon as logs are typically configured to rotate on a schedule; this technique has been utilized to kick off malicious binaries.
 references:
     - https://support.scythe.io/knowledge/empower-logrotate
     - https://linux.die.net/man/8/logrotate
-    - https://attack.mitre.org/techniques/T1053/003/
-author: Tyler Casey, SCYTHE
-date: 2024-10-03
-modified: 2026-01-23
 tags:
+    - attack.execution
     - attack.t1059.004
-    - attack.t1053.003
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/10/03
 logsource:
     category: process_creation
     product: linux
 detection:
     selection:
-        Image|endswith: '/logrotate'
-    filter_cron:
-        ParentImage|endswith:
-            - '/cron'
-            - '/crond'
-            - '/anacron'
-    filter_systemd:
-        ParentImage|endswith:
-            - '/systemd'
-            - '/init'
-    selection_custom_config:
-        CommandLine|contains:
-            - '/tmp/'
-            - '/var/tmp/'
-            - '/dev/shm/'
-            - '/home/'
-            - '~/'
-    selection_force_execution:
-        CommandLine|contains:
-            - '-f '
-            - '--force'
-            - '-d '
-            - '--debug'
-    condition: (selection and not 1 of filter_*) or (selection and selection_custom_config) or (selection and selection_force_execution and not 1 of filter_*)
+        CommandLine|contains: ' logrotate '
+    condition: selection
 falsepositives:
-    - Administrators manually rotating logs for troubleshooting
-    - Custom logrotate configurations in non-standard locations
-level: medium
+    - Administrators forcing logs to rotate as part of work responsibilities.
+level: low

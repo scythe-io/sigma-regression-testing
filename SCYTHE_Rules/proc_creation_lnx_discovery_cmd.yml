@@ -1,77 +1,32 @@
-title: Linux Discovery Commands from Non-Shell Parent Process
+title: Linux Discovery Commands Spawned from Non-Shell Parent
 id: bee3c1ea-8508-48b8-b641-cffbefd45e3d
 status: experimental
-description: Detects execution of Linux discovery commands by processes whose parent is not a standard interactive shell. This may indicate automated reconnaissance by malware rather than interactive user activity.
+description: Detects execution of Linux discovery commands (ip, ss, hostname) that are not spawned from typical user shells. This pattern may indicate malware performing system reconnaissance directly without interactive shell access.
 references:
     - https://unit42.paloaltonetworks.com/new-linux-variant-bifrost-malware/
-    - https://attack.mitre.org/techniques/T1082/
-author: Tyler Casey, SCYTHE
-date: 2024-03-18
-modified: 2026-01-23
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/18
 tags:
     - attack.discovery
     - attack.t1082
-    - attack.t1016
+    - attack.execution
+    - attack.t1059.004
 logsource:
     product: linux
     category: process_creation
 detection:
-    selection_discovery:
-        Image|endswith:
-            - '/ip'
-            - '/ss'
-            - '/hostname'
-            - '/uname'
-            - '/id'
-            - '/whoami'
-            - '/ifconfig'
-            - '/netstat'
-            - '/cat'
-    selection_discovery_args:
+    selection_cmdline:
         CommandLine|contains:
-            - 'ip addr'
-            - 'ip route'
-            - 'ip a'
-            - 'ip r'
-            - 'ss -'
-            - 'hostname -'
-            - 'uname -a'
-            - 'cat /etc/passwd'
-            - 'cat /etc/shadow'
-            - 'cat /etc/hosts'
-    filter_shells:
+            - 'ip '
+            - 'ss '
+            - 'hostname'
+    filter_shell:
         ParentImage|endswith:
             - '/bash'
             - '/sh'
             - '/zsh'
             - '/fish'
-            - '/dash'
-            - '/ksh'
-            - '/csh'
-            - '/tcsh'
-    filter_config_management:
-        ParentImage|endswith:
-            - '/ansible'
-            - '/python'
-            - '/puppet'
-            - '/chef-client'
-            - '/salt-minion'
-            - '/cfengine'
-    filter_monitoring:
-        ParentImage|endswith:
-            - '/zabbix_agentd'
-            - '/telegraf'
-            - '/collectd'
-            - '/node_exporter'
-            - '/nagios'
-            - '/nrpe'
-    filter_cron:
-        ParentImage|endswith:
-            - '/cron'
-            - '/crond'
-            - '/anacron'
-    condition: (selection_discovery or selection_discovery_args) and not 1 of filter_*
+    condition: selection_cmdline and not filter_shell
 falsepositives:
-    - Legitimate automation scripts not covered by filters
-    - Custom monitoring solutions
-level: medium
+    - Cron jobs or automated scripts that run discovery commands.
+level: low

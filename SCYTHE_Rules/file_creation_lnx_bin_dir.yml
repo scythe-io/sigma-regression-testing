@@ -1,20 +1,16 @@
-title: Suspicious File Creation in System Binary Directories
+title: File Creation in Bin Directories
 id: 02b2514b-46d8-45ab-b7a2-173ba4e8af48
 status: experimental
-description: Detects file creation events in /usr/bin/ or /usr/sbin/ directories from non-package manager processes. Adversaries may drop malicious binaries in these locations to achieve persistence or blend in with legitimate system tools.
+description: Detects when a file is created in /bin/ or /sbin/ directories. This is indicative of a new binary or program being installed on the system.
 references:
     - https://support.scythe.io/knowledge/empower-logrotate
     - https://tldp.org/LDP/Linux-Filesystem-Hierarchy/html/bin.html
     - https://tldp.org/LDP/Linux-Filesystem-Hierarchy/html/sbin.html
-    - https://attack.mitre.org/techniques/T1543/002/
-author: Tyler Casey, SCYTHE
-date: 2024-10-03
-modified: 2026-01-23
 tags:
-    - attack.persistence
-    - attack.t1543.002
     - attack.execution
     - attack.t1059.004
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/10/03
 logsource:
     category: file_event
     product: linux
@@ -23,47 +19,7 @@ detection:
         TargetFilename|startswith:
             - '/usr/bin/'
             - '/usr/sbin/'
-            - '/bin/'
-            - '/sbin/'
-    filter_package_managers:
-        Image|endswith:
-            - '/apt'
-            - '/apt-get'
-            - '/dpkg'
-            - '/yum'
-            - '/dnf'
-            - '/rpm'
-            - '/pacman'
-            - '/zypper'
-            - '/snap'
-            - '/snapd'
-            - '/flatpak'
-            - '/apk'
-            - '/emerge'
-            - '/pip'
-            - '/pip3'
-            - '/npm'
-            - '/gem'
-    filter_package_manager_paths:
-        Image|contains:
-            - '/usr/lib/apt/'
-            - '/var/lib/dpkg/'
-            - '/usr/share/dpkg/'
-            - '/usr/libexec/packagekitd'
-    filter_system_updates:
-        Image|endswith:
-            - '/unattended-upgrade'
-            - '/packagekitd'
-            - '/update-manager'
-    filter_lib_files:
-        TargetFilename|endswith:
-            - '.so'
-            - '.a'
-            - '.o'
-            - '.pyc'
-    condition: selection and not 1 of filter_*
+    condition: selection
 falsepositives:
-    - Custom software installation scripts
-    - Manual compilation and installation (make install)
-    - Container image builds
-level: medium
+    - Legitimate binaries or programs being installed on system.
+level: low

@@ -1,11 +1,12 @@
 title: Registry Run Key Modification
 id: 65cd0d2b-b9f6-4562-80d3-fbb69091389f
 status: experimental
-description: Detects modifications to Windows Run and RunOnce registry keys. Adversaries commonly abuse these autostart locations to establish persistence by executing malware automatically upon user logon.
+description: Detects modifications to the Windows Registry Run and RunOnce keys, which are commonly used by malware to establish persistence. These keys cause programs to execute automatically when a user logs on.
 references:
     - https://www.volexity.com/blog/2023/06/28/charming-kitten-updates-powerstar-with-an-interplanetary-twist/
-author: Tyler Casey, SCYTHE
-date: 2024-07-24
+    - https://attack.mitre.org/techniques/T1547/001/
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/07/24
 tags:
     - attack.persistence
     - attack.t1547.001
@@ -17,10 +18,10 @@ detection:
         TargetObject|contains:
             - '\Software\Microsoft\Windows\CurrentVersion\Run\'
             - '\Software\Microsoft\Windows\CurrentVersion\RunOnce\'
-    filter_main_windefend:
-        TargetObject|contains: '\Services\WinDefend'
-    condition: selection and not filter_main_windefend
+    filter_defender:
+        TargetObject|contains:
+            - '\Services\WinDefend'
+    condition: selection and not filter_defender
 falsepositives:
-    - Legitimate software adding startup entries
-    - System administration scripts
+    - Legitimate software installations that add startup entries.
 level: medium

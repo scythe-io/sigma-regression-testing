@@ -1,16 +1,16 @@
-title: Suspicious Command-Line File Transfer Utility Execution
+title: CMDLine File Transfer - Process Creation
 id: 41138321-4ec6-4284-8485-c8587f683ed4
 status: experimental
-description: Detects process creation events for command-line file transfer utilities from suspicious contexts. While these tools have legitimate uses, adversaries frequently leverage them to download malicious payloads or exfiltrate data.
+description: Detects command-line execution of file transfer utilities, such as wget and curl.
 references:
     - https://support.scythe.io/knowledge/cloudfox-v2
-    - https://attack.mitre.org/techniques/T1105/
-author: Tyler Casey, SCYTHE
-date: 2024-06-28
-modified: 2026-01-23
+    - https://www.icds.psu.edu/roar-user-guide/how-to-transfer-data-at-the-command-line/#:~:text=There%20are%20two%20main%20command,%2C%20copies%20them%2C%20and%20exits.
+    
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/06/28
 tags:
+    - attack.command_and_control
     - attack.t1105
-    - attack.t1048
 logsource:
     category: process_creation
     product: linux
@@ -22,70 +22,7 @@ detection:
             - '/scp'
             - '/aria2c'
             - '/rclone'
-            - '/rsync'
-            - '/sftp'
-            - '/ftp'
-            - '/nc'
-            - '/netcat'
-            - '/ncat'
-            - '/socat'
-    filter_package_managers:
-        ParentImage|endswith:
-            - '/apt'
-            - '/apt-get'
-            - '/dpkg'
-            - '/yum'
-            - '/dnf'
-            - '/pacman'
-            - '/zypper'
-            - '/snap'
-            - '/pip'
-            - '/pip3'
-            - '/npm'
-            - '/gem'
-            - '/cargo'
-            - '/go'
-    filter_update_services:
-        ParentImage|endswith:
-            - '/unattended-upgrade'
-            - '/packagekitd'
-            - '/snapd'
-            - '/flatpak'
-    filter_cron:
-        ParentImage|endswith:
-            - '/cron'
-            - '/crond'
-            - '/anacron'
-    filter_config_management:
-        ParentImage|endswith:
-            - '/ansible'
-            - '/puppet'
-            - '/chef-client'
-            - '/salt-minion'
-            - '/cfengine'
-    selection_suspicious_destinations:
-        CommandLine|contains:
-            - '/tmp/'
-            - '/var/tmp/'
-            - '/dev/shm/'
-            - '/.hidden'
-            - ' -O /tmp'
-            - ' -o /tmp'
-            - ' > /tmp'
-    selection_suspicious_params:
-        CommandLine|contains:
-            - '--no-check-certificate'
-            - '-k '
-            - '--insecure'
-            - 'pastebin.com'
-            - 'paste.ee'
-            - 'hastebin.com'
-            - 'transfer.sh'
-            - 'file.io'
-            - 'ngrok.io'
-    condition: (selection and not 1 of filter_*) or (selection and (selection_suspicious_destinations or selection_suspicious_params))
+    condition: selection
 falsepositives:
-    - Legitimate file transfers by administrators from interactive shells
-    - Custom deployment scripts
-    - CI/CD pipelines
+    - Legitimate files being transferred.
 level: medium

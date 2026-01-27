@@ -1,31 +1,31 @@
-title: Process Execution from Suspicious User-Writable Directory
+title: Suspicious Process Creation Location
 id: 930095d6-4e7b-40e9-be55-99f8e1a8bdc9
 status: experimental
-description: Detects process execution from user-writable directories commonly abused by malware (Downloads, TEMP, AppData\Local, Public). Adversaries often stage and execute payloads from these locations to avoid detection.
+description: Detects a process being created from suspicious or uncommon directories.
 references:
     - https://support.scythe.io/knowledge/sharpdragon
-author: Tyler Casey, SCYTHE
+author: Tyler Casey @1qazCasey, @scythe_io
 date: 2024-07-08
 tags:
-    - attack.t1059
-    - attack.t1036
+    - attack.execution
+    - attack.t1059.001
 logsource:
     product: windows
-    category: process_creation
+    category: proc_creation
 detection:
-    selection:
-        - Image|contains:
+    selection_img_filepath:
+        Image|contains:
             - '\Downloads\'
-            - '\Temp\'
-            - '\AppData\Local\Temp\'
+            - '\TEMP\'
+            - '\AppData\Local\'
             - '\Public\'
-        - ParentImage|contains:
+    selection_parent_img_sus:
+        ParentImage|contains:
             - '\Downloads\'
-            - '\Temp\'
-            - '\AppData\Local\Temp\'
+            - '\TEMP\'
+            - '\AppData\Local\'
             - '\Public\'
-    condition: selection
+    condition: selection_img_filepath or selection_parent_img_sus
 falsepositives:
-    - Legitimate software installers running from Downloads
-    - Temporary file extraction during installation
-level: low
+    - Legitimate process creation
+level: medium

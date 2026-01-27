@@ -1,73 +1,38 @@
-title: Suspicious Archive File Creation by Uncommon Process
+title: Suspicious Archive Creation
 id: 756ff96e-6fce-44bc-9998-160951c7bcbf
 status: experimental
-description: Detects archive file creation (ZIP, 7Z, TAR, RAR, WIM) by processes other than common archive utilities. This technique is used by threat actors such as Cold River Group (SPICA) and TrueBot malware loader to stage data for exfiltration.
+description: Detects suspicious archive creation by uncommon processes. This technique is utilized by Cold River Group's SPICA, and TrueBot malware loader.
 references:
     - https://support.scythe.io/knowledge/empower-threat-feb2024-coldriver-spica
-    - https://attack.mitre.org/techniques/T1560/001/
-author: Tyler Casey, SCYTHE
+author: Tyler Casey @1qazCasey, @scythe_io
 date: 2024-02-28
-modified: 2026-01-23
 tags:
     - attack.collection
-    - attack.t1560.001
+    - attack.t1560.003
 logsource:
     product: windows
-    category: file_event
+    service: file_event
 detection:
-    selection_filename:
-        TargetFilename|endswith:
-            - '.zip'
-            - '.7z'
-            - '.tar'
-            - '.tar.gz'
-            - '.tgz'
-            - '.rar'
-            - '.wim'
-            - '.cab'
-    filter_archive_tools:
-        Image|endswith:
+    selection_img: 
+        Image|endswith: #exclude common archive utilities
             - '\7z.exe'
             - '\7zg.exe'
             - '\7zr.exe'
             - '\7za.exe'
-            - '\7zFM.exe'
-            - '\WinRAR.exe'
-            - '\Rar.exe'
-            - '\UnRAR.exe'
-            - '\WinZip.exe'
-            - '\WinZip64.exe'
-            - '\wzzip.exe'
-            - '\Bandizip.exe'
-            - '\PeaZip.exe'
-            - '\IZArc.exe'
-            - '\tar.exe'
-            - '\bsdtar.exe'
-    filter_windows_system:
-        Image|endswith:
             - '\explorer.exe'
-            - '\dism.exe'
-            - '\dismhost.exe'
-            - '\makecab.exe'
-            - '\expand.exe'
-    filter_backup_tools:
-        Image|endswith:
-            - '\robocopy.exe'
-            - '\wbengine.exe'
-            - '\veeam.backup.shell.exe'
-    filter_dev_tools:
-        Image|contains:
-            - '\Program Files\Microsoft Visual Studio\'
-            - '\Program Files (x86)\Microsoft Visual Studio\'
-            - '\Program Files\Git\'
-            - '\Program Files (x86)\Git\'
-    filter_installers:
-        Image|contains:
-            - '\Windows\Installer\'
-            - '\Windows\Temp\{'
-    condition: selection_filename and not 1 of filter_*
+    selection_filename:
+        TargetFilename|contains:
+            - '.zip'
+            - '.7z'
+            - '.tar'
+            - '.wim'
+    selection_cmdline:
+        CommandLine|contains:
+            - '.zip'
+            - '.7z'
+            - '.tar'
+            - '.wim'
+    condition: (selection_filename or selection_cmdline) and not selection_img
 falsepositives:
-    - Third-party archive utilities not in filter list
-    - Legitimate applications with built-in archive functionality
-    - Software deployment tools
-level: medium
+    -   Other tools that create archives would trigger this alert, they will need to be added to the selection_img to be excluded.
+level: high

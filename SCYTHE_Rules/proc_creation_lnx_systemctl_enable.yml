@@ -1,13 +1,11 @@
-title: Suspicious Service Enabled via Systemctl
+title: Enable Service via systemctl
 id: 7a074483-d40d-4c1a-b98e-f092f9a0015b
 status: experimental
-description: Detects enabling of systemd services via systemctl enable command from suspicious contexts. Adversaries may enable malicious services to establish persistence, ensuring their payloads execute automatically on system startup.
+description: Detects a service being enabled via systemctl.  This could be indicative of an adversary enabling a service as a persistence mechanism.
 references:
     - https://support.scythe.io/knowledge/systemd-persistence
-    - https://attack.mitre.org/techniques/T1543/002/
-author: Tyler Casey, SCYTHE
-date: 2024-06-28
-modified: 2026-01-23
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/06/28
 tags:
     - attack.persistence
     - attack.t1543.002
@@ -18,44 +16,7 @@ detection:
     selection:
         Image|endswith: '/systemctl'
         CommandLine|contains: 'enable'
-    filter_package_managers:
-        ParentImage|endswith:
-            - '/apt'
-            - '/apt-get'
-            - '/dpkg'
-            - '/yum'
-            - '/dnf'
-            - '/rpm'
-            - '/pacman'
-            - '/zypper'
-            - '/snap'
-            - '/flatpak'
-    filter_config_management:
-        ParentImage|endswith:
-            - '/ansible'
-            - '/python'
-            - '/puppet'
-            - '/chef-client'
-            - '/salt-minion'
-            - '/cfengine'
-    filter_system_scripts:
-        ParentImage|endswith:
-            - '/postinst'
-            - '/preinst'
-            - '/postrm'
-            - '/prerm'
-    selection_suspicious_paths:
-        CommandLine|contains:
-            - '/tmp/'
-            - '/var/tmp/'
-            - '/dev/shm/'
-            - '/home/'
-            - '/.local/'
-            - '/run/user/'
-    selection_suspicious_names:
-        CommandLine|re: '(systemctl\s+enable\s+[a-z0-9]{8,}\.service)'  # Random-looking service names
-    condition: selection and (not filter_package_managers and not filter_config_management and not filter_system_scripts) or (selection and (selection_suspicious_paths or selection_suspicious_names))
+    condition: selection
 falsepositives:
-    - Custom service installation by administrators from non-standard locations
-    - Third-party software with unusual service naming conventions
-level: medium
+    - Legitimate service being enabled.
+level: low

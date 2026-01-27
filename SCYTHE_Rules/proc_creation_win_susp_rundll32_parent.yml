@@ -1,64 +1,37 @@
 title: Rundll32 Execution with Suspicious Context
 id: e52a60a2-7f60-4970-9b91-5a1e5d1e6cba
 status: experimental
-description: Detects rundll32.exe execution from suspicious contexts including command shells, non-standard parent locations, or with suspicious DLL paths. Adversaries commonly abuse rundll32 to execute malicious DLLs while evading detection.
+description: Detects rundll32.exe execution spawned by command shells (cmd.exe or PowerShell) or from non-standard directories. This pattern is common in malware that uses rundll32 as a proxy to execute malicious DLLs while evading detection.
 references:
     - https://support.scythe.io/knowledge/grimresource
-    - https://attack.mitre.org/techniques/T1218/011/
-author: Tyler Casey, SCYTHE
-date: 2024-07-23
-modified: 2026-01-23
+    - https://lolbas-project.github.io/lolbas/Binaries/Rundll32/
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/07/23
 tags:
-    - attack.t1218.011
+    - attack.execution
     - attack.t1059
+    - attack.defense_evasion
+    - attack.t1218.011
 logsource:
     product: windows
     category: process_creation
 detection:
-    selection_rundll32:
-        Image|endswith: '\rundll32.exe'
-    selection_shell_parent:
+    selection_img:
+        Image|endswith:
+            - '\rundll32.exe'
+    selection_parent_shell:
         ParentImage|endswith:
             - '\cmd.exe'
             - '\powershell.exe'
+            - '\powershell_ise.exe'
             - '\pwsh.exe'
-            - '\wscript.exe'
-            - '\cscript.exe'
-            - '\mshta.exe'
-    filter_standard_paths:
+    filter_standard_locations:
         ParentImage|contains:
             - '\Windows\System32\'
             - '\Windows\SysWOW64\'
             - '\Program Files\'
             - '\Program Files (x86)\'
-    selection_suspicious_dll:
-        CommandLine|contains:
-            - '\AppData\'
-            - '\Temp\'
-            - '\ProgramData\'
-            - '\Users\Public\'
-            - '\Downloads\'
-            - '%APPDATA%'
-            - '%TEMP%'
-            - '%PUBLIC%'
-            - 'javascript:'
-            - 'http://'
-            - 'https://'
-    selection_suspicious_exports:
-        CommandLine|contains:
-            - ',#'
-            - 'DllRegisterServer'
-            - 'DllUnregisterServer'
-    filter_legitimate_dll:
-        CommandLine|contains:
-            - 'shell32.dll'
-            - 'user32.dll'
-            - 'advapi32.dll'
-            - 'PrintUI'
-            - 'cryptext.dll'
-            - 'InetCpl.cpl'
-    condition: (selection_rundll32 and selection_shell_parent and not filter_standard_paths) or (selection_rundll32 and selection_suspicious_dll and not filter_legitimate_dll) or (selection_rundll32 and selection_suspicious_exports and selection_suspicious_dll)
+    condition: selection_img and (selection_parent_shell or not filter_standard_locations)
 falsepositives:
-    - Legitimate software using rundll32 for DLL execution
-    - Control panel applets
+    - Legitimate administrative scripts that invoke rundll32 for system configuration.
 level: medium

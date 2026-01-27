@@ -1,22 +1,24 @@
 title: File Permission Modification via Icacls Denying Everyone Access
 id: 4ded5f6e-cfd6-4666-8f9d-d913a07efb8f
 status: experimental
-description: Detects icacls.exe execution with the /deny parameter targeting the Everyone group (S-1-1-0). This technique is used by StopCrypt ransomware to deny file access and prevent recovery operations.
+description: Detects the use of icacls.exe to deny access permissions to the Everyone group (S-1-1-0), a technique commonly used by ransomware to prevent file recovery and by attackers to restrict access to malicious files or tools.
 references:
     - https://blog.sonicwall.com/en-us/2024/03/new-multi-stage-stopcrypt-ransomware/
-author: Tyler Casey, SCYTHE
-date: 2024-04-04
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/04/04
 tags:
+    - attack.defense_evasion
     - attack.t1222.001
-    - attack.t1486
 logsource:
     product: windows
     category: process_creation
 detection:
     selection:
-        Image|endswith: '\icacls.exe'
-        CommandLine|contains: '/deny *S-1-1-0:'
+        Image|endswith:
+            - '\icacls.exe'
+        CommandLine|contains:
+            - '/deny *S-1-1-0:'
     condition: selection
 falsepositives:
-    - Legitimate security hardening operations
+    - Administrators modifying DACLs on files for legitimate security purposes.
 level: high

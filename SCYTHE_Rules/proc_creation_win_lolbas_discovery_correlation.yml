@@ -1,19 +1,18 @@
 title: LOLBAS Discovery Command Execution
-id: 670f5683-2ea7-478a-a690-d790bf1aaa27
 name: lolbas_discovery
+id: 670f5683-2ea7-478a-a690-d790bf1aaa27
 status: experimental
-description: Detects execution of common Living Off The Land Binaries and Scripts (LOLBAS) used for system discovery. High volume of these commands from a single parent process may indicate automated reconnaissance activity.
+description: Detects execution of common Living Off the Land Binaries and Scripts (LOLBAS) used for system discovery and reconnaissance. These native Windows tools are frequently abused by attackers to enumerate system information while blending in with normal administrative activity.
 references:
     - https://www.cisa.gov/sites/default/files/2023-07/aa23-187a-increased-truebot-activity-infects-us-and-canada-based-networks_2.pdf
     - https://lolbas-project.github.io/
-author: Tyler Casey, SCYTHE
-date: 2024-02-29
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/02/29
 tags:
-    - attack.discovery
-    - attack.t1082
-    - attack.t1016
     - attack.execution
     - attack.t1059
+    - attack.discovery
+    - attack.t1082
 logsource:
     product: windows
     category: process_creation
@@ -26,9 +25,10 @@ detection:
             - 'mstsc'
             - 'mshta'
             - 'netsh'
+            - ' set '
             - 'arp -'
             - 'netstat'
-            - 'net.exe'
+            - 'net.exe '
             - 'w32tm'
             - 'schtasks'
             - 'systeminfo'
@@ -38,21 +38,13 @@ detection:
             - 'quser'
     condition: selection
 falsepositives:
-    - System administration tasks
-    - Troubleshooting activities
+    - System administrators performing legitimate discovery operations.
 level: low
 ---
-title: Multiple LOLBAS Discovery Commands from Single Parent Process
-id: 670f5683-2ea7-478a-a690-d790bf1aaa28
+title: Multiple LOLBAS Discovery Commands in Short Timeframe
+id: 7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d
 status: experimental
-description: Detects multiple LOLBAS discovery commands executed from the same parent process within 30 seconds, indicating potential automated reconnaissance.
-references:
-    - https://www.cisa.gov/sites/default/files/2023-07/aa23-187a-increased-truebot-activity-infects-us-and-canada-based-networks_2.pdf
-author: Tyler Casey, SCYTHE
-date: 2024-02-29
-tags:
-    - attack.discovery
-    - attack.t1082
+description: Detects multiple LOLBAS discovery commands executed from the same parent process within a short timeframe, which may indicate automated reconnaissance activity.
 correlation:
     type: event_count
     rules:
@@ -62,4 +54,3 @@ correlation:
     timespan: 30s
     condition:
         gte: 3
-level: medium

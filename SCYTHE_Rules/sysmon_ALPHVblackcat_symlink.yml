@@ -1,0 +1,25 @@
+title: ALPHV BlackCat Symlink Evaluation Policy Modification
+id: d864ec41-1b8f-41b0-9cbe-7c6f677b5bfa
+status: experimental
+description: Detects the use of fsutil to enable symlink evaluation for remote-to-local (R2L) and remote-to-remote (R2R) links, a technique associated with ALPHV/BlackCat ransomware. Enabling these symlinks can allow ransomware to follow symbolic links to encrypt files on network shares and mapped drives.
+references:
+    - https://www.varonis.com/blog/blackcat-ransomware
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/01/03
+tags:
+    - attack.execution
+    - attack.t1059.003
+    - attack.defense_evasion
+    - attack.t1027
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    selection:
+        CommandLine|contains:
+            - 'fsutil behavior set SymlinkEvaluation R2L:1'
+            - 'fsutil behavior set SymlinkEvaluation R2R:1'
+    condition: selection
+falsepositives:
+    - System administrators enabling symlink evaluation for legitimate network file access requirements.
+level: high

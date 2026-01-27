@@ -1,60 +1,32 @@
-title: Run Key Registry Modification via PowerShell
+title: Suspicious Run Key Creation
 id: 44fec743-072b-425f-ab1e-1a8549c153de
 status: experimental
-description: Detects PowerShell cmdlets modifying Windows Run or RunOnce registry keys, especially when pointing to suspicious locations. Adversaries commonly abuse these registry keys to establish persistence.
+description: Detects windows run keys being created or modified via the "Set-ItemProperty" CMDLet.
 references:
     - https://support.scythe.io/knowledge/sharpdragon
-    - https://attack.mitre.org/techniques/T1547/001/
-author: Tyler Casey, SCYTHE
-date: 2024-07-08
-modified: 2026-01-23
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/07/08
 tags:
+    - attack.execution
+    - attack.t1059.001
     - attack.persistence
     - attack.t1547.001
 logsource:
     product: windows
-    category: process_creation
+    category: proc_creation
 detection:
-    selection_shell:
+    selection_img:
         Image|endswith:
             - '\powershell.exe'
-            - '\pwsh.exe'
-    selection_cmdlet:
+            - '\cmd.exe'
+    selection_cmdline:
         CommandLine|contains:
             - 'Set-ItemProperty'
             - 'Set-Item'
-            - 'New-ItemProperty'
-            - 'New-Item'
-            - 'reg add'
     selection_runkey:
         CommandLine|contains:
             - '\Software\Microsoft\Windows\CurrentVersion\Run'
-            - '\Software\Microsoft\Windows\CurrentVersion\RunOnce'
-            - '\Software\Microsoft\Windows\CurrentVersion\RunServices'
-            - '\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
-            - '\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders'
-    filter_parent_installers:
-        ParentImage|contains:
-            - '\Program Files\'
-            - '\Program Files (x86)\'
-            - '\Windows\Installer\'
-    selection_suspicious_values:
-        CommandLine|contains:
-            - '\AppData\'
-            - '\Temp\'
-            - '\ProgramData\'
-            - '\Users\Public\'
-            - '%APPDATA%'
-            - '%TEMP%'
-            - '%PUBLIC%'
-            - 'powershell'
-            - 'cmd.exe'
-            - 'wscript'
-            - 'cscript'
-            - 'mshta'
-            - 'rundll32'
-    condition: (all of selection_* and not filter_parent_installers) or (selection_shell and selection_cmdlet and selection_runkey and selection_suspicious_values)
+    condition: all of selection_*
 falsepositives:
-    - Legitimate software installation via PowerShell
-    - Administrative scripts configuring startup programs
-level: high
+    - Legitimate creation of Run Keys via PowerShell
+level: medium

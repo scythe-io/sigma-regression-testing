@@ -1,13 +1,11 @@
-title: Suspicious Systemd Service Unit File Creation
+title: System Service Creation
 id: b1aa3509-82c0-423c-ac80-262a25b0e0f4
 status: experimental
-description: Detects file creation events in systemd directories from non-package manager processes. Adversaries may create malicious systemd service unit files to establish persistence, ensuring their payloads execute automatically on system startup.
+description: Detects file creation in /etc/systemd/system.  This could be indicative of an adversary creating a service as a persistence mechanism.
 references:
     - https://support.scythe.io/knowledge/systemd-persistence
-    - https://attack.mitre.org/techniques/T1543/002/
-author: Tyler Casey, SCYTHE
-date: 2024-06-28
-modified: 2026-01-23
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/06/28
 tags:
     - attack.persistence
     - attack.t1543.002
@@ -16,51 +14,8 @@ logsource:
     product: linux
 detection:
     selection:
-        TargetFilename|startswith:
-            - '/etc/systemd/system/'
-            - '/usr/lib/systemd/system/'
-            - '/lib/systemd/system/'
-            - '/run/systemd/system/'
-            - '~/.config/systemd/user/'
-    filter_package_managers:
-        Image|endswith:
-            - '/apt'
-            - '/apt-get'
-            - '/dpkg'
-            - '/yum'
-            - '/dnf'
-            - '/rpm'
-            - '/pacman'
-            - '/zypper'
-            - '/snap'
-            - '/snapd'
-            - '/flatpak'
-    filter_package_manager_paths:
-        Image|contains:
-            - '/usr/lib/apt/'
-            - '/var/lib/dpkg/'
-            - '/usr/share/dpkg/'
-    filter_system_services:
-        Image|endswith:
-            - '/systemctl'
-            - '/systemd'
-            - '/packagekitd'
-    filter_config_management:
-        Image|endswith:
-            - '/ansible'
-            - '/python'
-            - '/puppet'
-            - '/chef-client'
-            - '/salt-minion'
-    selection_suspicious_locations:
-        TargetFilename|contains:
-            - '/tmp/'
-            - '/var/tmp/'
-            - '/dev/shm/'
-    selection_suspicious_names:
-        TargetFilename|re: '/[a-z0-9]{16,}\.service$'
-    condition: (selection and not 1 of filter_*) or (selection and 1 of selection_suspicious_*)
+        file_path|startswith: '/etc/systemd/system'
+    condition: selection
 falsepositives:
-    - Custom service installation by administrators
-    - Third-party software installers
-level: medium
+    - Legitimate service being created.
+level: low

@@ -1,60 +1,31 @@
-title: Azure CLI Discovery and Execution Commands
+title: Azure CLI Discovery Commands
 id: 2a3a051b-946a-442e-b3ff-def01db439a2
 status: experimental
-description: Detects execution of Azure CLI commands commonly used for cloud infrastructure reconnaissance or remote execution. Commands like 'az vm run-command' can be abused to execute arbitrary code on Azure VMs.
+description: Detects execution of Azure CLI commands used for infrastructure reconnaissance from a Windows host. Multiple Azure discovery commands executed in a short timeframe may indicate an attacker enumerating cloud resources after compromising credentials or a host with Azure CLI access.
 references:
     - https://support.scythe.io/knowledge/azure-resource-group-backdoor
-    - https://attack.mitre.org/techniques/T1580/
-author: Tyler Casey, SCYTHE
-date: 2024-03-28
-modified: 2026-01-23
+    - https://learn.microsoft.com/en-us/cli/azure/
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/28
 tags:
-    - attack.discovery
-    - attack.t1580
-    - attack.t1087.004
     - attack.execution
     - attack.t1059
+    - attack.discovery
+    - attack.t1087.004
+    - attack.t1580
 logsource:
     product: windows
     category: process_creation
 detection:
-    selection_az:
-        Image|endswith:
-            - '\az.cmd'
-            - '\az.exe'
-        CommandLine|contains: ' az '
-    selection_execution_commands:
+    selection:
         CommandLine|contains:
-            - 'az vm run-command invoke'
-            - 'az vm run-command create'
-            - 'az vmss run-command invoke'
-    selection_discovery_commands:
-        CommandLine|contains:
+            - 'az vm run-command'
             - 'az vm show'
+            - 'az network nic'
+            - 'az network nsg'
+            - 'az network public-ip'
             - 'az vm list'
-            - 'az network nic show'
-            - 'az network nsg show'
-            - 'az network public-ip list'
-            - 'az ad user list'
-            - 'az ad group list'
-            - 'az role assignment list'
-            - 'az keyvault list'
-            - 'az keyvault secret list'
-            - 'az storage account list'
-            - 'az storage account keys list'
-    filter_automation_accounts:
-        User|contains:
-            - 'svc_'
-            - 'azure-pipelines'
-            - 'devops'
-    filter_parent_devtools:
-        ParentImage|contains:
-            - '\Visual Studio\'
-            - '\Azure Data Studio\'
-            - '\Code.exe'
-    condition: (selection_az or selection_execution_commands or selection_discovery_commands) and not 1 of filter_*
+    condition: selection
 falsepositives:
-    - Legitimate Azure administration and automation
-    - Azure DevOps pipelines
-    - Infrastructure as Code deployments
+    - Administrators using Azure CLI for legitimate cloud management tasks.
 level: medium

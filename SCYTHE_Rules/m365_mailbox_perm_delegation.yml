@@ -1,42 +1,29 @@
-title: Suspicious Mailbox Permission Delegation in Microsoft 365
+title: Microsoft 365 Mailbox Permission Delegation or Application Owner Added
 id: 539170d6-ea17-493c-a3fb-4dc7f04f1042
 status: experimental
-description: Detects mailbox permission delegation operations in Microsoft 365 audit logs. Adversaries may add themselves as owners or delegates to mailboxes to maintain persistent access to email communications for intelligence gathering.
+description: Detects mailbox permission delegation or application owner changes in Microsoft 365. Attackers may abuse these permissions to maintain persistent access to email communications, intercept sensitive information, or establish OAuth application backdoors for long-term access.
 references:
     - https://support.scythe.io/knowledge/m365
-    - https://attack.mitre.org/techniques/T1098/002/
-author: Tyler Casey, SCYTHE
-date: 2024-03-27
-modified: 2026-01-23
+    - https://learn.microsoft.com/en-us/purview/audit-log-activities
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/27
 tags:
+    - attack.persistence
     - attack.t1098.002
+    - attack.collection
+    - attack.t1114.002
 logsource:
     product: m365
     service: threat_management
 detection:
     selection:
-        EventSource: 'UnifiedAuditLog'
-    selection_operations:
-        Operation:
-            - 'Add-MailboxPermission'
-            - 'Set-MailboxFolderPermission'
-            - 'Add-RecipientPermission'
-            - 'Set-Mailbox'
+        EventSource:
+            - UnifiedAuditLog
+        Operation|contains:
             - 'Add owner to application'
-            - 'Add delegated permission grant'
-            - 'Add app role assignment grant to user'
-    filter_system_accounts:
-        UserId|contains:
-            - 'DVEB-SPRBX'
-            - 'ServiceAccount'
-            - 'sync_'
-    selection_suspicious_permissions:
-        Parameters|contains:
-            - 'FullAccess'
-            - 'SendAs'
-            - 'SendOnBehalf'
-    condition: selection and selection_operations and selection_suspicious_permissions and not filter_system_accounts
+            - 'Add-MailboxPermission'
+            - 'Set-Mailbox'
+    condition: selection
 falsepositives:
-    - Legitimate mailbox permission delegation by administrators
-    - Automated provisioning systems
+    - IT administrators configuring mailbox permissions for legitimate business purposes.
 level: medium

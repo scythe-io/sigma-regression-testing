@@ -1,11 +1,11 @@
 title: StopCrypt Ransomware Command Line Parameters
 id: 29c87ffe-bb8b-49cc-9409-582d112c84d0
 status: experimental
-description: Detects process execution with command-line parameters characteristic of StopCrypt ransomware (--Admin IsNotAutoStart IsNotTask). These specific parameters are used by the malware to determine its execution context.
+description: Detects the distinctive command line parameters '--Admin IsNotAutoStart IsNotTask' used by StopCrypt ransomware during execution. These parameters are characteristic of this ransomware family and indicate an active infection.
 references:
     - https://blog.sonicwall.com/en-us/2024/03/new-multi-stage-stopcrypt-ransomware/
-author: Tyler Casey, SCYTHE
-date: 2024-04-04
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/04/04
 tags:
     - attack.execution
     - attack.t1059
@@ -16,8 +16,9 @@ logsource:
     category: process_creation
 detection:
     selection:
-        CommandLine|contains: '--Admin IsNotAutoStart IsNotTask'
+        CommandLine|endswith:
+            - '--Admin IsNotAutoStart IsNotTask'
     condition: selection
 falsepositives:
-    - Unlikely
-level: critical
+    - Unlikely; these parameters are specific to StopCrypt ransomware.
+level: high

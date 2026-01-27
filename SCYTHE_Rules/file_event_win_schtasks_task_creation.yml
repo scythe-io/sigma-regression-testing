@@ -1,27 +1,27 @@
-title: Scheduled Task File Creation in Tasks Directory
+title: Scheduled Task Creation
 id: a6aa453c-d4a9-431d-be9d-a537cfede03f
 status: experimental
-description: Detects file creation events in Windows scheduled task directories (Windows\Tasks, Windows\System32\Tasks, Windows\SysWOW64\Tasks). Adversaries commonly abuse scheduled tasks for persistence by creating task definition files in these locations.
+description: Detects scheduled task creation via file creation in multiple "\Tasks\" directory
 references:
     - https://support.scythe.io/knowledge/empower-threat-feb2024-coldriver-spica
-author: Tyler Casey, SCYTHE
+author: Tyler Casey @1qazCasey, @scythe_io
 date: 2024-02-28
 tags:
     - attack.persistence
-    - attack.t1053.005
+    - attack.t1053
 logsource:
     product: windows
-    category: file_event
+    category: file_event 
 detection:
-    selection_dir:
+    selection_dir: 
         TargetFilename|contains:
-            - '\Windows\Tasks\'
-            - '\Windows\System32\Tasks\'
-            - '\Windows\SysWOW64\Tasks\'
-    filter_main_microsoft:
-        TargetFilename|contains: '\Windows\System32\Tasks\Microsoft\'
-    condition: selection_dir and not filter_main_microsoft
+            - 'Windows\Tasks'
+            - 'Windows\System32\Tasks'
+            - 'Windows\SYSWOW64\Tasks'
+    selection_allowlist:
+        TargetFilename|contains:
+            - 'Windows\System32\Tasks\Microsoft\' # filters out tasks created by Windows, could lead to FN
+    condition: selection_dir and not selection_allowlist
 falsepositives:
-    - Administrators creating scheduled tasks for system administration
-    - Legitimate software installers creating scheduled tasks
+    -   Administrators may create scheduled tasks for system administration.  Add to the selection_allowlist to filter out known good scheduled tasks.
 level: medium

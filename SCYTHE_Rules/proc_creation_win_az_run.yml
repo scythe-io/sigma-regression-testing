@@ -1,22 +1,25 @@
-title: Potential Azure VM Command Execution via AZ CLI
+title: Azure VM Run-Command Execution
 id: 6745e010-bca4-49a2-9ec2-92a1e7957744
 status: experimental
-description: Detects execution of 'az vm run-command invoke' which allows running scripts on Azure VMs. Adversaries with Azure access may abuse this capability to execute commands on cloud-hosted virtual machines for lateral movement or persistence.
+description: Detects execution of Azure CLI 'az vm run-command invoke' from a Windows host. This command allows remote code execution on Azure VMs and is rarely used interactively. Unexpected executions may indicate lateral movement or an attacker leveraging Azure infrastructure for persistence.
 references:
     - https://support.scythe.io/knowledge/azure-resource-group-backdoor
-author: Tyler Casey, SCYTHE
-date: 2024-03-28
+    - https://learn.microsoft.com/en-us/cli/azure/vm/run-command
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/28
 tags:
-    - attack.t1059.001
+    - attack.execution
+    - attack.t1059
+    - attack.lateral_movement
     - attack.t1021
 logsource:
     product: windows
     category: process_creation
 detection:
     selection:
-        CommandLine|contains: 'az vm run-command invoke'
+        CommandLine|contains:
+            - 'az vm run-command invoke'
     condition: selection
 falsepositives:
-    - Legitimate Azure VM administration
-    - Automation scripts for cloud management
+    - Administrators using Azure CLI for legitimate VM management tasks.
 level: medium

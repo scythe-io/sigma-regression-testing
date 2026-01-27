@@ -1,51 +1,29 @@
 title: Local User Account Creation via New-LocalUser PowerShell Cmdlet
 id: 88c38101-0568-44bd-89b0-5b6d20edb8e7
 status: experimental
-description: Detects execution of the New-LocalUser PowerShell cmdlet used to create local user accounts. Adversaries may create rogue local accounts for persistence or to avoid detection by blending in with legitimate users.
+description: Detects the use of PowerShell's New-LocalUser cmdlet to create local user accounts. Attackers may create local accounts to establish persistence or backdoor access to compromised systems.
 references:
     - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-353a
-    - https://attack.mitre.org/techniques/T1136/001/
-author: Tyler Casey, SCYTHE
-date: 2024-03-28
-modified: 2026-01-23
+    - https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.localaccounts/new-localuser
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/03/28
 tags:
     - attack.persistence
     - attack.t1136.001
+    - attack.defense_evasion
+    - attack.t1078.003
 logsource:
     product: windows
     category: process_creation
 detection:
-    selection_powershell:
+    selection:
         Image|endswith:
             - '\powershell.exe'
+            - '\powershell_ise.exe'
             - '\pwsh.exe'
-    selection_cmdlet:
         CommandLine|contains:
             - 'New-LocalUser'
-            - 'Add-LocalGroupMember'
-    filter_parent_system:
-        ParentImage|endswith:
-            - '\svchost.exe'
-            - '\services.exe'
-            - '\msiexec.exe'
-    filter_parent_admin_tools:
-        ParentImage|contains:
-            - '\Program Files\Microsoft Configuration Manager\'
-            - '\Program Files (x86)\Microsoft Configuration Manager\'
-            - '\Windows\CCM\'
-    selection_admin_group:
-        CommandLine|contains:
-            - 'Administrators'
-            - 'Remote Desktop Users'
-            - 'Remote Management Users'
-    selection_suspicious_params:
-        CommandLine|contains:
-            - '-NoPassword'
-            - 'PasswordNeverExpires'
-            - '-Password (ConvertTo-SecureString'
-            - 'AsPlainText'
-    condition: (selection_powershell and selection_cmdlet and not 1 of filter_*) or (selection_powershell and selection_cmdlet and selection_admin_group) or (selection_powershell and selection_cmdlet and selection_suspicious_params)
+    condition: selection
 falsepositives:
-    - Legitimate user account creation by administrators
-    - Software installation scripts
+    - IT administrators creating local accounts for legitimate purposes.
 level: medium

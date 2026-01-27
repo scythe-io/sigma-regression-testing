@@ -1,24 +1,30 @@
-title: Process Execution from Windows SxS Assembly Directory
-id: b3157617-7d1d-43db-8990-16ca0a1e9d19
+title: Process Execution from Windows SxS Directory
+id: c8d71a92-43f3-4a8b-b2c1-9e7f8d6a5e4b
 status: experimental
-description: Detects process execution originating from the Windows SxS (side-by-side) assembly directory. Adversaries may abuse the SxS directory for DLL side-loading attacks by placing malicious DLLs alongside legitimate executables.
+description: Detects process execution originating from or having a parent process in the Windows Side-by-Side (WinSxS) assembly directory. Attackers may exploit the trusted nature of this directory to execute malicious code or perform DLL sideloading attacks.
 references:
     - https://support.scythe.io/knowledge/april-2024-winsxs-sideloading
-author: Tyler Casey, SCYTHE
-date: 2024-04-22
+author: Tyler Casey @1qazCasey, @scythe_io
+date: 2024/04/22
 tags:
-    - attack.t1574.001
-    - attack.t1059
+    - attack.execution
+    - attack.t1059.001
+    - attack.defense_evasion
+    - attack.t1574.002
 logsource:
     product: windows
     category: process_creation
 detection:
-    selection:
-        - ParentImage|contains: '\Windows\WinSxS\'
-        - Image|contains: '\Windows\WinSxS\'
-    filter_main_legitimate:
-        Image|endswith: '\TiWorker.exe'
-    condition: selection and not filter_main_legitimate
+    selection_parent_img:
+        ParentImage|contains:
+            - 'Windows\WinSxS'
+    selection_img:
+        Image|contains:
+            - 'Windows\WinSxS'
+    filter_legitimate:
+        Image|endswith:
+            - '\TiWorker.exe'
+    condition: (selection_parent_img or selection_img) and not filter_legitimate
 falsepositives:
-    - Legitimate Windows servicing operations
+    - Legitimate Windows servicing operations via TiWorker.exe.
 level: medium
