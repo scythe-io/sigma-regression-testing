@@ -56,9 +56,6 @@ class TestResult:
     missing_rules: List[str]
     execution_time: float
     error: Optional[str] = None
-    search_queries: Dict[str, str] = field(default_factory=dict)  # rule_name -> query
-    search_results: Dict[str, List[Dict]] = field(default_factory=dict)  # rule_name -> results
-    lookback_seconds: int = 0
 
 
 class SplunkClient:
@@ -74,10 +71,8 @@ class SplunkClient:
     def search(self, query: str, earliest: str = "-15m", latest: str = "now") -> List[Dict]:
         """Execute a Splunk search and return results."""
         create_url = f"{self.base_url}/services/search/jobs"
-        # Don't add 'search' prefix if query already starts with a pipe command
-        search_query = query if query.strip().startswith('|') else f"search {query}"
         data = {
-            "search": search_query,
+            "search": f"search {query}",
             "earliest_time": earliest,
             "latest_time": latest,
             "output_mode": "json"
@@ -119,15 +114,14 @@ class SplunkClient:
         results = self.search(query, earliest=earliest)
         return [r["savedsearch_name"] for r in results]
 
-    def search_saved_search(self, search_name: str, earliest: str = "-15m") -> tuple:
-        """Run a saved search and return (count, query, results)."""
+    def search_saved_search(self, search_name: str, earliest: str = "-15m") -> int:
+        """Run a saved search and return result count."""
         query = f'| savedsearch "{search_name}"'
         try:
             results = self.search(query, earliest=earliest)
-            return len(results), query, results
-        except Exception as e:
-            print(f"      [DEBUG] Error running saved search: {e}")
-            return 0, query, []
+            return len(results)
+        except Exception:
+            return 0
 
 
 class AtomicRunner:
@@ -147,21 +141,17 @@ class AtomicRunner:
 
         Returns dict with 'success' bool and 'output' or 'error'.
         """
-        # Build the PowerShell command (import module first for remote sessions)
-        ps_cmd = 'Import-Module "C:\\AtomicRedTeam\\invoke-atomicredteam\\Invoke-AtomicRedTeam.psd1" -Force; '
-        ps_cmd += f'Invoke-AtomicTest {technique_id} -TestGuids {test_guid}'
+        # Build the PowerShell command
+        ps_cmd = f'Invoke-AtomicTest {technique_id} -TestGuids {test_guid}'
 
         if input_args:
-            # PowerShell hashtables use semicolons as separators
-            args_str = ';'.join(f'{k}="{v}"' for k, v in input_args.items())
-            ps_cmd += f' -InputArgs @{{{args_str}}}'
+            args_str = ','.join(f'{k}="{v}"' for k, v in input_args.items())
+            ps_cmd += f' -InputArguments @{{{args_str}}}'
 
-        # -Cleanup runs cleanup commands after the test
-        # -Force bypasses confirmation prompts
-        if cleanup:
-            ps_cmd += ' -Cleanup'
+        if not cleanup:
+            ps_cmd += ' -NoCleanup'
 
-        ps_cmd += ' -Force'
+        ps_cmd += ' -Confirm:$false'
 
         if self.target == "localhost" and not self.use_winrm:
             return self._run_local(ps_cmd)
@@ -198,7 +188,24 @@ class AtomicRunner:
                 auth=(self.winrm_user, self.winrm_pass),
                 transport='ntlm'
             )
-            result = session.run_ps(ps_cmd)
+            # Import Atomic Red Team module before running command
+            # The module may be in different locations depending on installation
+            full_cmd = '''
+$ErrorActionPreference = "SilentlyContinue"
+# Try common ART installation paths
+$artPaths = @(
+    "C:\\AtomicRedTeam\\invoke-atomicredteam\\Invoke-AtomicRedTeam.psd1",
+    "$env:USERPROFILE\\AtomicRedTeam\\invoke-atomicredteam\\Invoke-AtomicRedTeam.psd1"
+)
+foreach ($path in $artPaths) {
+    if (Test-Path $path) {
+        Import-Module $path -Force
+        break
+    }
+}
+$ErrorActionPreference = "Continue"
+''' + ps_cmd
+            result = session.run_ps(full_cmd)
             return {
                 "success": result.status_code == 0,
                 "output": result.std_out.decode('utf-8'),
@@ -211,9 +218,9 @@ class AtomicRunner:
 
     def check_atomic_installed(self) -> bool:
         """Verify Atomic Red Team is installed."""
-        check_cmd = 'Import-Module "C:\\AtomicRedTeam\\invoke-atomicredteam\\Invoke-AtomicRedTeam.psd1" -Force; Get-Command Invoke-AtomicTest'
+        check_cmd = "Get-Module -ListAvailable -Name Invoke-AtomicRedTeam"
         result = self._run_local(check_cmd) if self.target == "localhost" else self._run_remote(check_cmd)
-        return result["success"] and "Invoke-AtomicTest" in result.get("output", "")
+        return result["success"] and "Invoke-AtomicRedTeam" in result.get("output", "")
 
 
 def load_test_config(config_path: str) -> List[AtomicTest]:
@@ -276,21 +283,16 @@ def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
         time.sleep(wait_time)
 
         # Check for triggered rules
-        lookback = wait_time + 60
-        print(f"[*] Checking Splunk for triggered rules (lookback: {lookback}s)...")
+        print("[*] Checking Splunk for triggered rules...")
 
         # Method 1: Check triggered alerts
-        all_alerts = splunk.get_triggered_alerts(earliest=f"-{lookback}s")
+        all_alerts = splunk.get_triggered_alerts(earliest=f"-{wait_time + 60}s")
         triggered_rules = [r for r in all_alerts if r in test.expected_rules]
 
         # Method 2: Also run each expected saved search directly
-        search_queries = {}
-        search_results = {}
         for rule_name in test.expected_rules:
             if rule_name not in triggered_rules:
-                count, query, results = splunk.search_saved_search(rule_name, earliest=f"-{lookback}s")
-                search_queries[rule_name] = query
-                search_results[rule_name] = results
+                count = splunk.search_saved_search(rule_name, earliest=f"-{wait_time + 60}s")
                 if count > 0:
                     triggered_rules.append(rule_name)
                     print(f"    [+] {rule_name}: {count} matches")
@@ -300,9 +302,6 @@ def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
     except Exception as e:
         error = str(e)
         print(f"[-] Error: {error}")
-        search_queries = {}
-        search_results = {}
-        lookback = wait_time + 60
 
     execution_time = time.time() - start_time
     missing_rules = [r for r in test.expected_rules if r not in triggered_rules]
@@ -320,346 +319,17 @@ def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
         triggered_rules=triggered_rules,
         missing_rules=missing_rules,
         execution_time=execution_time,
-        error=error,
-        search_queries=search_queries,
-        search_results=search_results,
-        lookback_seconds=lookback
+        error=error
     )
 
 
-def generate_html_report(results: List[TestResult], output_path: str, timestamp: str):
-    """Generate interactive HTML report with filtering."""
-    passed = sum(1 for r in results if r.passed)
-    failed = len(results) - passed
-    pass_rate = (passed / len(results) * 100) if results else 0
-
-    # Build table rows
-    table_rows = []
-    for r in results:
-        status_class = "passed" if r.passed else "failed"
-        status_text = "PASS" if r.passed else "FAIL"
-        expected = ", ".join(r.expected_rules)
-        triggered = ", ".join(r.triggered_rules) if r.triggered_rules else "-"
-        missing = ", ".join(r.missing_rules) if r.missing_rules else "-"
-        error_text = r.error[:100] + "..." if r.error and len(r.error) > 100 else (r.error or "-")
-
-        table_rows.append(f'''
-            <tr class="{status_class}" data-status="{status_text}" data-technique="{r.technique_id}">
-                <td><span class="status-badge {status_class}">{status_text}</span></td>
-                <td>{r.test_name}</td>
-                <td><code>{r.technique_id}</code></td>
-                <td>{expected}</td>
-                <td>{triggered}</td>
-                <td>{missing}</td>
-                <td class="error-cell" title="{r.error or ''}">{error_text}</td>
-            </tr>
-        ''')
-
-    html_content = f'''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sigma Regression Test Report</title>
-    <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
-        }}
-        .container {{
-            max-width: 1400px;
-            margin: 0 auto;
-        }}
-        header {{
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }}
-        header h1 {{
-            font-size: 28px;
-            margin-bottom: 5px;
-        }}
-        header .timestamp {{
-            opacity: 0.7;
-            font-size: 14px;
-        }}
-        .summary-cards {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }}
-        .card {{
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }}
-        .card h3 {{
-            font-size: 14px;
-            text-transform: uppercase;
-            color: #666;
-            margin-bottom: 8px;
-        }}
-        .card .value {{
-            font-size: 36px;
-            font-weight: 700;
-        }}
-        .card.passed .value {{ color: #22c55e; }}
-        .card.failed .value {{ color: #ef4444; }}
-        .card.total .value {{ color: #3b82f6; }}
-        .card.rate .value {{ color: #8b5cf6; }}
-        .progress-section {{
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }}
-        .progress-bar {{
-            height: 24px;
-            background: #fee2e2;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-top: 10px;
-        }}
-        .progress-fill {{
-            height: 100%;
-            background: linear-gradient(90deg, #22c55e, #16a34a);
-            border-radius: 12px;
-            transition: width 0.5s ease;
-        }}
-        .filters {{
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }}
-        .filters label {{
-            font-weight: 500;
-            color: #555;
-        }}
-        .filters select, .filters input {{
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }}
-        .filters input {{
-            width: 250px;
-        }}
-        .table-container {{
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            overflow: hidden;
-        }}
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-        }}
-        th {{
-            background: #f8fafc;
-            padding: 14px 16px;
-            text-align: left;
-            font-weight: 600;
-            color: #475569;
-            border-bottom: 2px solid #e2e8f0;
-            position: sticky;
-            top: 0;
-        }}
-        td {{
-            padding: 12px 16px;
-            border-bottom: 1px solid #f1f5f9;
-            vertical-align: top;
-        }}
-        tr:hover {{
-            background: #f8fafc;
-        }}
-        tr.hidden {{
-            display: none;
-        }}
-        .status-badge {{
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }}
-        .status-badge.passed {{
-            background: #dcfce7;
-            color: #166534;
-        }}
-        .status-badge.failed {{
-            background: #fee2e2;
-            color: #991b1b;
-        }}
-        code {{
-            background: #f1f5f9;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 13px;
-        }}
-        .error-cell {{
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            color: #991b1b;
-            font-size: 13px;
-        }}
-        .legend {{
-            display: flex;
-            gap: 20px;
-            margin-top: 10px;
-            font-size: 14px;
-        }}
-        .legend-item {{
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }}
-        .legend-color {{
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
-        }}
-        .legend-color.pass {{ background: #22c55e; }}
-        .legend-color.fail {{ background: #ef4444; }}
-        footer {{
-            text-align: center;
-            margin-top: 30px;
-            color: #666;
-            font-size: 14px;
-        }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Sigma Regression Test Report</h1>
-            <div class="timestamp">Generated: {timestamp}</div>
-        </header>
-
-        <div class="summary-cards">
-            <div class="card total">
-                <h3>Total Tests</h3>
-                <div class="value">{len(results)}</div>
-            </div>
-            <div class="card passed">
-                <h3>Passed</h3>
-                <div class="value">{passed}</div>
-            </div>
-            <div class="card failed">
-                <h3>Failed</h3>
-                <div class="value">{failed}</div>
-            </div>
-            <div class="card rate">
-                <h3>Pass Rate</h3>
-                <div class="value">{pass_rate:.1f}%</div>
-            </div>
-        </div>
-
-        <div class="progress-section">
-            <strong>Overall Progress</strong>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: {pass_rate}%"></div>
-            </div>
-            <div class="legend">
-                <div class="legend-item"><div class="legend-color pass"></div> Passed ({passed})</div>
-                <div class="legend-item"><div class="legend-color fail"></div> Failed ({failed})</div>
-            </div>
-        </div>
-
-        <div class="filters">
-            <label>Filter by Status:</label>
-            <select id="statusFilter" onchange="filterTable()">
-                <option value="all">All</option>
-                <option value="PASS">Passed Only</option>
-                <option value="FAIL">Failed Only</option>
-            </select>
-            <label>Search:</label>
-            <input type="text" id="searchInput" placeholder="Search test name or technique..." onkeyup="filterTable()">
-        </div>
-
-        <div class="table-container">
-            <table id="resultsTable">
-                <thead>
-                    <tr>
-                        <th>Status</th>
-                        <th>Test Name</th>
-                        <th>Technique</th>
-                        <th>Expected Rules</th>
-                        <th>Triggered Rules</th>
-                        <th>Missing Rules</th>
-                        <th>Error</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {"".join(table_rows)}
-                </tbody>
-            </table>
-        </div>
-
-        <footer>
-            <p>Generated by Sigma Regression Test Framework</p>
-        </footer>
-    </div>
-
-    <script>
-        function filterTable() {{
-            const statusFilter = document.getElementById('statusFilter').value;
-            const searchText = document.getElementById('searchInput').value.toLowerCase();
-            const rows = document.querySelectorAll('#resultsTable tbody tr');
-
-            rows.forEach(row => {{
-                const status = row.getAttribute('data-status');
-                const technique = row.getAttribute('data-technique').toLowerCase();
-                const testName = row.cells[1].textContent.toLowerCase();
-
-                const matchesStatus = statusFilter === 'all' || status === statusFilter;
-                const matchesSearch = testName.includes(searchText) || technique.includes(searchText);
-
-                if (matchesStatus && matchesSearch) {{
-                    row.classList.remove('hidden');
-                }} else {{
-                    row.classList.add('hidden');
-                }}
-            }});
-        }}
-    </script>
-</body>
-</html>
-'''
-
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-
-
 def generate_report(results: List[TestResult], output_path: str):
-    """Generate JSON and HTML test reports."""
+    """Generate JSON test report."""
     passed = sum(1 for r in results if r.passed)
     failed = len(results) - passed
-    timestamp = datetime.now().isoformat()
 
     report = {
-        "timestamp": timestamp,
+        "timestamp": datetime.now().isoformat(),
         "summary": {
             "total_tests": len(results),
             "passed": passed,
@@ -679,21 +349,11 @@ def generate_report(results: List[TestResult], output_path: str):
             "triggered_rules": r.triggered_rules,
             "missing_rules": r.missing_rules,
             "execution_time_seconds": round(r.execution_time, 2),
-            "lookback_seconds": r.lookback_seconds,
-            "search_queries": r.search_queries,
-            "search_results": r.search_results,
             "error": r.error
         })
 
-    # Write JSON report
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2)
-
-    # Write HTML report
-    html_path = output_path.replace('.json', '.html')
-    if html_path == output_path:
-        html_path = output_path + '.html'
-    generate_html_report(results, html_path, timestamp)
 
     # Print summary
     print("\n" + "="*60)
@@ -714,9 +374,7 @@ def generate_report(results: List[TestResult], output_path: str):
                 if r.error:
                     print(f"    Error: {r.error}")
 
-    print(f"\nReports saved to:")
-    print(f"  JSON: {output_path}")
-    print(f"  HTML: {html_path}")
+    print(f"\nReport saved to: {output_path}")
     return report
 
 
@@ -777,7 +435,6 @@ def main():
     parser.add_argument('--wait-time', type=int, default=60, help='Seconds to wait for log ingestion')
     parser.add_argument('--dry-run', action='store_true', help='Show tests without executing')
     parser.add_argument('--skip-atomic-check', action='store_true', help='Skip Atomic RT install check')
-    parser.add_argument('--batch', action='store_true', help='Run all atomics first, then check rules (faster)')
 
     args = parser.parse_args()
 
@@ -834,79 +491,9 @@ def main():
 
     # Run tests
     results = []
-
-    if args.batch:
-        # Batch mode: run all atomics first, then check all rules
-        print("\n" + "="*60)
-        print("BATCH MODE: Running all atomic tests first...")
-        print("="*60)
-
-        execution_results = {}
-        for test in tests:
-            print(f"\n[+] Executing: {test.name} ({test.technique_id})")
-            result = runner.run_atomic(
-                test.technique_id,
-                test.atomic_test_guid,
-                test.input_arguments,
-                test.cleanup
-            )
-            execution_results[test.name] = result
-            if result["success"]:
-                print(f"    OK")
-            else:
-                print(f"    FAILED: {result.get('error', 'Unknown')[:50]}")
-
-        print(f"\n[*] All atomics executed. Waiting {args.wait_time}s for log ingestion...")
-        time.sleep(args.wait_time)
-
-        print("\n" + "="*60)
-        print("Checking Splunk for triggered rules...")
-        print("="*60)
-
-        lookback = args.wait_time + 120  # Extra buffer for batch mode
-
-        for test in tests:
-            start_time = time.time()
-            exec_result = execution_results[test.name]
-            error = exec_result.get('error') if not exec_result['success'] else None
-
-            triggered_rules = []
-            search_queries = {}
-            search_results = {}
-
-            print(f"\n[*] {test.name}")
-            for rule_name in test.expected_rules:
-                count, query, rule_results = splunk.search_saved_search(rule_name, earliest=f"-{lookback}s")
-                search_queries[rule_name] = query
-                search_results[rule_name] = rule_results
-                if count > 0:
-                    triggered_rules.append(rule_name)
-                    print(f"    [+] {rule_name}: {count} matches")
-                else:
-                    print(f"    [-] {rule_name}: no matches")
-
-            missing_rules = [r for r in test.expected_rules if r not in triggered_rules]
-            passed = len(missing_rules) == 0 and error is None
-
-            results.append(TestResult(
-                test_name=test.name,
-                technique_id=test.technique_id,
-                atomic_guid=test.atomic_test_guid,
-                passed=passed,
-                expected_rules=test.expected_rules,
-                triggered_rules=triggered_rules,
-                missing_rules=missing_rules,
-                execution_time=time.time() - start_time,
-                error=error,
-                search_queries=search_queries,
-                search_results=search_results,
-                lookback_seconds=lookback
-            ))
-    else:
-        # Sequential mode: run each test and wait
-        for test in tests:
-            result = run_test(test, splunk, runner, args.wait_time)
-            results.append(result)
+    for test in tests:
+        result = run_test(test, splunk, runner, args.wait_time)
+        results.append(result)
 
     # Generate report
     generate_report(results, args.output)

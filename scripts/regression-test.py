@@ -188,7 +188,24 @@ class AtomicRunner:
                 auth=(self.winrm_user, self.winrm_pass),
                 transport='ntlm'
             )
-            result = session.run_ps(ps_cmd)
+            # Import Atomic Red Team module before running command
+            # The module may be in different locations depending on installation
+            full_cmd = '''
+$ErrorActionPreference = "SilentlyContinue"
+# Try common ART installation paths
+$artPaths = @(
+    "C:\\AtomicRedTeam\\invoke-atomicredteam\\Invoke-AtomicRedTeam.psd1",
+    "$env:USERPROFILE\\AtomicRedTeam\\invoke-atomicredteam\\Invoke-AtomicRedTeam.psd1"
+)
+foreach ($path in $artPaths) {
+    if (Test-Path $path) {
+        Import-Module $path -Force
+        break
+    }
+}
+$ErrorActionPreference = "Continue"
+''' + ps_cmd
+            result = session.run_ps(full_cmd)
             return {
                 "success": result.status_code == 0,
                 "output": result.std_out.decode('utf-8'),
