@@ -71,8 +71,13 @@ class SplunkClient:
     def search(self, query: str, earliest: str = "-15m", latest: str = "now") -> List[Dict]:
         """Execute a Splunk search and return results."""
         create_url = f"{self.base_url}/services/search/jobs"
+        # Don't prepend 'search' if query starts with a generating command (|)
+        if query.strip().startswith('|'):
+            search_query = query
+        else:
+            search_query = f"search {query}"
         data = {
-            "search": f"search {query}",
+            "search": search_query,
             "earliest_time": earliest,
             "latest_time": latest,
             "output_mode": "json"
