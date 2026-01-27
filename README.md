@@ -244,6 +244,14 @@ The HTML report includes:
 - Visual progress bar for quick pass/fail overview
 - Filterable table by status (All/Passed/Failed) and search text
 - Details for each test including expected rules, triggered rules, and missing rules
+- **Clickable Splunk links** for each expected rule that open the saved search directly in Splunk (with last 15 minutes time range)
+
+**Additional Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--splunk-web-port` | 8000 | Splunk web UI port (for HTML report links) |
+| `--splunk-app` | search | Splunk app context for saved searches |
 
 ### Installing Atomic Red Team
 

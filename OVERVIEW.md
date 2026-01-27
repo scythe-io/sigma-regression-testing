@@ -238,6 +238,8 @@ The `regression-test.py` script supports two modes:
 |-----------|-------------|
 | `--splunk-host` | Splunk server hostname |
 | `--splunk-user` | Splunk username |
+| `--splunk-web-port` | Splunk web UI port for HTML links (default: 8000) |
+| `--splunk-app` | Splunk app context (default: search) |
 | `--target` | Remote Windows target IP for atomic tests |
 | `--winrm-user` | WinRM username (e.g., `DOMAIN\Administrator`) |
 | `--winrm-pass` | WinRM password |
@@ -262,5 +264,6 @@ The script generates two output files:
 - Visual progress bar showing pass/fail ratio
 - Filterable table (filter by status or search text)
 - Detailed view of expected, triggered, and missing rules for each test
+- **Clickable Splunk links** - Each expected rule is a hyperlink that opens the saved search directly in Splunk with a 15-minute time range
 
 Open `test_results.html` in any browser to review results interactively.
