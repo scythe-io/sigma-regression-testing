@@ -328,8 +328,145 @@ def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
     )
 
 
+def generate_html_report(results: List[TestResult], report: dict, output_path: str):
+    """Generate interactive HTML test report."""
+    passed = report['summary']['passed']
+    failed = report['summary']['failed']
+    total = report['summary']['total_tests']
+    pass_rate = report['summary']['pass_rate']
+
+    # Calculate progress bar width
+    pass_pct = (passed / total * 100) if total > 0 else 0
+
+    html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sigma Regression Test Results</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background: #f5f5f5; padding: 20px; }}
+        .container {{ max-width: 1200px; margin: 0 auto; }}
+        h1 {{ color: #333; margin-bottom: 20px; }}
+        .timestamp {{ color: #666; margin-bottom: 20px; }}
+        .summary {{ display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }}
+        .card {{ background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-width: 150px; }}
+        .card h3 {{ color: #666; font-size: 14px; margin-bottom: 8px; }}
+        .card .value {{ font-size: 32px; font-weight: bold; }}
+        .card.passed .value {{ color: #22c55e; }}
+        .card.failed .value {{ color: #ef4444; }}
+        .card.total .value {{ color: #3b82f6; }}
+        .card.rate .value {{ color: #8b5cf6; }}
+        .progress-bar {{ background: #e5e7eb; height: 24px; border-radius: 12px; overflow: hidden; margin-bottom: 30px; }}
+        .progress-fill {{ height: 100%; background: linear-gradient(90deg, #22c55e, #16a34a); width: {pass_pct}%; transition: width 0.3s; }}
+        .filters {{ margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }}
+        .filters button {{ padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; }}
+        .filters button.active {{ background: #3b82f6; color: white; border-color: #3b82f6; }}
+        .filters input {{ padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; width: 250px; }}
+        table {{ width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        th {{ background: #f8fafc; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #e5e7eb; }}
+        td {{ padding: 12px; border-bottom: 1px solid #e5e7eb; }}
+        tr:hover {{ background: #f8fafc; }}
+        .status {{ padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }}
+        .status.pass {{ background: #dcfce7; color: #166534; }}
+        .status.fail {{ background: #fee2e2; color: #991b1b; }}
+        .rules {{ font-size: 12px; color: #666; }}
+        .rules .missing {{ color: #ef4444; }}
+        .rules .triggered {{ color: #22c55e; }}
+        .hidden {{ display: none; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sigma Regression Test Results</h1>
+        <p class="timestamp">Generated: {report['timestamp']}</p>
+
+        <div class="summary">
+            <div class="card total"><h3>Total Tests</h3><div class="value">{total}</div></div>
+            <div class="card passed"><h3>Passed</h3><div class="value">{passed}</div></div>
+            <div class="card failed"><h3>Failed</h3><div class="value">{failed}</div></div>
+            <div class="card rate"><h3>Pass Rate</h3><div class="value">{pass_rate}</div></div>
+        </div>
+
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+
+        <div class="filters">
+            <button class="active" onclick="filterTests('all')">All</button>
+            <button onclick="filterTests('pass')">Passed</button>
+            <button onclick="filterTests('fail')">Failed</button>
+            <input type="text" placeholder="Search tests..." onkeyup="searchTests(this.value)">
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Test Name</th>
+                    <th>Technique</th>
+                    <th>Expected Rules</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+'''
+
+    for r in report['results']:
+        status_class = 'pass' if r['passed'] else 'fail'
+        status_text = 'PASS' if r['passed'] else 'FAIL'
+        expected = ', '.join(r['expected_rules'])
+        triggered = ', '.join(r['triggered_rules']) if r['triggered_rules'] else 'None'
+        missing = ', '.join(r['missing_rules']) if r['missing_rules'] else ''
+
+        result_html = f'<span class="triggered">Triggered: {triggered}</span>'
+        if missing:
+            result_html += f'<br><span class="missing">Missing: {missing}</span>'
+        if r['error']:
+            result_html += f'<br><span class="missing">Error: {r["error"]}</span>'
+
+        html += f'''                <tr data-status="{status_class}">
+                    <td><span class="status {status_class}">{status_text}</span></td>
+                    <td>{r['test_name']}</td>
+                    <td>{r['technique_id']}</td>
+                    <td class="rules">{expected}</td>
+                    <td class="rules">{result_html}</td>
+                </tr>
+'''
+
+    html += '''            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function filterTests(status) {
+            document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('tbody tr').forEach(row => {
+                if (status === 'all' || row.dataset.status === status) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+
+        function searchTests(query) {
+            query = query.toLowerCase();
+            document.querySelectorAll('tbody tr').forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.classList.toggle('hidden', !text.includes(query));
+            });
+        }
+    </script>
+</body>
+</html>'''
+
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+
+
 def generate_report(results: List[TestResult], output_path: str):
-    """Generate JSON test report."""
+    """Generate JSON and HTML test reports."""
     passed = sum(1 for r in results if r.passed)
     failed = len(results) - passed
 
@@ -357,8 +494,13 @@ def generate_report(results: List[TestResult], output_path: str):
             "error": r.error
         })
 
+    # Write JSON report
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2)
+
+    # Write HTML report
+    html_path = output_path.replace('.json', '.html')
+    generate_html_report(results, report, html_path)
 
     # Print summary
     print("\n" + "="*60)
@@ -379,7 +521,9 @@ def generate_report(results: List[TestResult], output_path: str):
                 if r.error:
                     print(f"    Error: {r.error}")
 
-    print(f"\nReport saved to: {output_path}")
+    print(f"\nReports saved to:")
+    print(f"  - {output_path}")
+    print(f"  - {html_path}")
     return report
 
 
