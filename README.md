@@ -82,7 +82,9 @@ sigma convert -t microsoft365defender SCYTHE_Rules/*.yml
 │   └── regression-test.py     # Atomic Red Team regression testing
 ├── tests/
 │   └── art_mapping.yaml       # Atomic Red Team test to rule mappings
-├── splunk_output/             # Generated Splunk artifacts (gitignored)
+├── splunk_output/             # Generated Splunk artifacts (auto-updated)
+│   ├── savedsearches.conf     # Splunk saved searches (auto-generated)
+│   └── conversion_report.json # Conversion statistics
 ├── wip/                       # Work in progress (not production ready)
 │   ├── aurora/                # Aurora EDR integration (coming soon)
 │   └── scythe/                # SCYTHE integration (coming soon)
@@ -147,12 +149,13 @@ A complete detection engineering pipeline for deploying Sigma rules to Splunk an
 │  1. Validate Sigma rules                                    │
 │  2. Convert Windows rules to Splunk savedsearches.conf      │
 │  3. Generate conversion report                              │
-│  4. Upload artifacts                                        │
+│  4. Commit savedsearches.conf back to repository            │
+│  5. Upload artifacts                                        │
 └─────────────────────────────────────────────────────────────┘
                           │
                           ▼ (on merge to main or manual trigger)
 ┌─────────────────────────────────────────────────────────────┐
-│  DEPLOY JOB                                                 │
+│  DEPLOY JOB (requires secrets configured)                   │
 ├─────────────────────────────────────────────────────────────┤
 │  1. Download converted artifacts                            │
 │  2. Deploy saved searches to Splunk via REST API            │
@@ -168,6 +171,8 @@ A complete detection engineering pipeline for deploying Sigma rules to Splunk an
 │  3. Report coverage and failures                            │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+> **Note:** The `savedsearches.conf` file is automatically regenerated and committed to the repository whenever Sigma rules change. You can always find the latest converted rules in `splunk_output/savedsearches.conf`.
 
 ### Local Usage
 

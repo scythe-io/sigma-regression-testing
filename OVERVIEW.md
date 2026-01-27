@@ -8,10 +8,10 @@ This is a collection of **detection rules** that help security teams find hacker
 
 The rules are written in **Sigma**, which is like a universal language for detection rules. The advantage is that you write the rule once, and it can be translated to work with whatever security tool your company uses - Splunk, Elastic, Microsoft Sentinel, etc.
 
-Currently there are **61 rules** covering:
-- **Windows** (42 rules) - detecting suspicious processes, registry changes, file activity
+Currently there are **75 rules** covering:
+- **Windows** (44 rules) - detecting suspicious processes, registry changes, file activity
 - **Linux** (13 rules) - detecting privilege escalation, backdoors, reconnaissance
-- **Microsoft 365/Cloud** (6 rules) - detecting mailbox tampering, suspicious SharePoint activity
+- **Microsoft 365/Cloud** (8 rules) - detecting mailbox tampering, suspicious SharePoint activity
 
 ---
 
@@ -28,11 +28,12 @@ There are 3 automated pipelines that run in GitHub when code changes:
 - If the rule passes, it gets a green checkmark and can be merged
 
 ### 2. Splunk Pipeline (`splunk-pipeline.yml`)
-**Purpose:** Converts rules to Splunk format and optionally deploys them.
+**Purpose:** Converts rules to Splunk format, commits results, and optionally deploys them.
 
 **How it works:**
 - Takes the Sigma rules and translates them into Splunk's "saved searches" format
-- Can automatically push those searches to your Splunk server
+- **Automatically commits** the generated `savedsearches.conf` back to the repository
+- Can automatically push those searches to your Splunk server (if secrets configured)
 - Can also run automated tests to verify the rules actually detect attacks
 
 ### 3. Deployment Workflow (`deploy-rules.yml`)
@@ -46,10 +47,11 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 
 | Step | Status | What We Did |
 |------|--------|-------------|
-| **Rule Upload** | Tested | Added 61 Sigma rules to the repository |
+| **Rule Upload** | Tested | Added 75 Sigma rules to the repository |
 | **Validation** | Tested | All rules pass `sigma check` - no syntax errors |
-| **Conversion** | Tested | Ran `convert-to-splunk.py` to generate `savedsearches.conf` with 43 Windows rules |
-| **Push to Splunk** | Tested | Deployed all 43 saved searches to Splunk using `deploy-to-splunk.ps1` |
+| **Conversion** | Tested | Ran `convert-to-splunk.py` to generate `savedsearches.conf` with 55 Windows rules |
+| **Auto-Commit** | Tested | Workflow automatically commits `savedsearches.conf` to repo on rule changes |
+| **Push to Splunk** | Tested | Deployed 41 saved searches to Splunk using `deploy-to-splunk.ps1` (2 complex rules need manual setup) |
 | **Regression Testing** | Tested | Ran 19 Atomic Red Team tests against Splunk rules via WinRM |
 
 ### Regression Test Results
@@ -112,10 +114,10 @@ Passing tests include:
 │   │  ───────────────────                                                 │    │
 │   │  Trigger: Merge to main / Manual                                     │    │
 │   │                                                                      │    │
-│   │  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────┐   │    │
-│   │  │   Convert    │───►│   Deploy     │───►│  Regression Test     │   │    │
-│   │  │  to Splunk   │    │  to Splunk   │    │  (Atomic Red Team)   │   │    │
-│   │  └──────────────┘    └──────────────┘    └──────────────────────┘   │    │
+│   │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌─────────────────┐   │    │
+│   │  │   Convert    │───►│ Auto-commit  │───►│   Deploy     │───►│ Regression Test │   │    │
+│   │  │  to Splunk   │    │  to repo     │    │  to Splunk   │    │ (Atomic Red Team)│   │    │
+│   │  └──────────────┘    └──────────────┘    └──────────────┘    └─────────────────┘   │    │
 │   └─────────────────────────────────────────────────────────────────────┘    │
 │                                                                               │
 └───────────────────────────────────────────────────────────────────────────────┘
@@ -192,15 +194,19 @@ Passing tests include:
                         ▼                 ▼                ▼
                    sigma check     convert-to-       deploy-to-
                    (GitHub)        splunk.py         splunk.ps1
-                                                          │
-                                                          ▼
+                                        │
+                                        ▼
+                                  Auto-commit
+                                  to repo
+                                        │
+                                        ▼
                                                    ┌─────────────┐
                                                    │   SPLUNK    │
                                                    │   SERVER    │
                                                    │  ┌───────┐  │
                                                    │  │Saved  │  │
                                                    │  │Search │  │
-                                                   │  │ x 43  │  │
+                                                   │  │ x 55  │  │
                                                    │  └───────┘  │
                                                    └─────────────┘
 ```
