@@ -429,9 +429,9 @@ def generate_html_report(results: List[TestResult], report: dict, output_path: s
             expected_links = []
             for rule in r['expected_rules']:
                 encoded_rule = quote(rule, safe='')
-                # Link to run the saved search directly
-                search_url = f"{splunk_base_url}/search?s=%2FservicesNS%2Fnobody%2F{splunk_app}%2Fsaved%2Fsearches%2F{encoded_rule}"
-                expected_links.append(f'<a href="{search_url}" target="_blank" title="Run in Splunk">{rule}</a>')
+                # Link to run the saved search directly with last 15 minutes time range
+                search_url = f"{splunk_base_url}/search?s=%2FservicesNS%2Fnobody%2F{splunk_app}%2Fsaved%2Fsearches%2F{encoded_rule}&earliest=-15m&latest=now"
+                expected_links.append(f'<a href="{search_url}" target="_blank" title="Run in Splunk (last 15 min)">{rule}</a>')
             expected = ', '.join(expected_links)
         else:
             expected = ', '.join(r['expected_rules'])
