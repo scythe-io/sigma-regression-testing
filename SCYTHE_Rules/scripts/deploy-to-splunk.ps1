@@ -80,27 +80,10 @@ function Parse-SavedSearchesConf {
 
     $searches = @()
     $currentSearch = $null
-    $currentKey = $null
-    $continuingValue = $false
 
     $content = Get-Content -Path $FilePath -Encoding UTF8
 
     foreach ($line in $content) {
-        # Handle line continuation
-        if ($continuingValue -and $currentSearch -and $currentKey) {
-            $trimmedLine = $line.Trim()
-            if ($trimmedLine.EndsWith('\')) {
-                # More continuation - append without the backslash
-                $currentSearch.Properties[$currentKey] += $trimmedLine.TrimEnd('\')
-            } else {
-                # End of continuation
-                $currentSearch.Properties[$currentKey] += $trimmedLine
-                $continuingValue = $false
-                $currentKey = $null
-            }
-            continue
-        }
-
         $line = $line.Trim()
 
         # Skip empty lines and comments
@@ -117,22 +100,10 @@ function Parse-SavedSearchesConf {
                 Name = $Matches[1]
                 Properties = @{}
             }
-            $continuingValue = $false
-            $currentKey = $null
         }
         # Property
-        elseif ($line -match '^(\w[\w\.]+)\s*=\s*(.*)$' -and $currentSearch) {
-            $key = $Matches[1]
-            $value = $Matches[2]
-
-            if ($value.EndsWith('\')) {
-                # Line continues on next line
-                $currentSearch.Properties[$key] = $value.TrimEnd('\')
-                $currentKey = $key
-                $continuingValue = $true
-            } else {
-                $currentSearch.Properties[$key] = $value
-            }
+        elseif ($line -match '^(\w+)\s*=\s*(.*)$' -and $currentSearch) {
+            $currentSearch.Properties[$Matches[1]] = $Matches[2]
         }
     }
 
@@ -155,19 +126,26 @@ function Get-SplunkAuthToken {
     $cred = New-Object System.Management.Automation.PSCredential($Username, $Password)
     $plainPassword = $cred.GetNetworkCredential().Password
 
-    $uri = "https://${Server}:${Port}/services/auth/login?output_mode=json"
+    $uri = "https://${Server}:${Port}/services/auth/login"
     $body = @{
         username = $Username
         password = $plainPassword
     }
 
     try {
-        $response = Invoke-RestMethod -Uri $uri -Method Post -Body $body -ErrorAction Stop
-        $sessionKey = $response.sessionKey
-        if (-not $sessionKey) {
-            throw "No session key in response"
+        # Use Invoke-WebRequest to get raw response, then parse
+        $webResponse = Invoke-WebRequest -Uri $uri -Method Post -Body $body -UseBasicParsing -ErrorAction Stop
+        $content = $webResponse.Content
+
+        # Parse XML to extract sessionKey
+        [xml]$xml = $content
+        $sessionKey = $xml.response.sessionKey
+
+        if ([string]::IsNullOrEmpty($sessionKey)) {
+            Write-Host "Debug - Response content: $content" -ForegroundColor Yellow
+            throw "Empty session key returned"
         }
-        return $sessionKey.Trim()
+        return $sessionKey
     }
     catch {
         throw "Failed to authenticate with Splunk: $_"
@@ -183,29 +161,18 @@ function Test-SavedSearchExists {
         [string]$SearchName
     )
 
-    $encodedName = [uri]::EscapeDataString($SearchName)
-    $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches/${encodedName}?output_mode=json"
+    $encodedName = [System.Web.HttpUtility]::UrlEncode($SearchName)
+    $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches/${encodedName}"
 
     $headers = @{
         Authorization = "Splunk $SessionKey"
     }
 
     try {
-        $null = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers -ErrorAction Stop
+        $response = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers -ErrorAction Stop
         return $true
     }
     catch {
-        $statusCode = 0
-        if ($_.Exception.Response) {
-            $statusCode = [int]$_.Exception.Response.StatusCode
-        }
-        if ($statusCode -eq 404) {
-            return $false
-        }
-        # For auth errors (401/403), throw to surface the issue
-        if ($statusCode -eq 401 -or $statusCode -eq 403) {
-            throw "Authorization failed checking search existence: $($_.Exception.Message)"
-        }
         return $false
     }
 }
@@ -268,12 +235,12 @@ function Deploy-SavedSearch {
 
     if ($exists) {
         # Update existing search
-        $encodedName = [uri]::EscapeDataString($searchName)
-        $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches/${encodedName}?output_mode=json"
+        $encodedName = [System.Web.HttpUtility]::UrlEncode($searchName)
+        $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches/${encodedName}"
         $body.Remove('name')  # Can't update name
 
         try {
-            $null = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -ErrorAction Stop
+            $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -ErrorAction Stop
             return @{ Status = 'Updated'; Name = $searchName }
         }
         catch {
@@ -282,10 +249,10 @@ function Deploy-SavedSearch {
     }
     else {
         # Create new search
-        $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches?output_mode=json"
+        $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches"
 
         try {
-            $null = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -ErrorAction Stop
+            $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -ErrorAction Stop
             return @{ Status = 'Created'; Name = $searchName }
         }
         catch {
@@ -336,7 +303,7 @@ if (-not $Password) {
 Write-Host "Authenticating with Splunk at ${SplunkHost}:${SplunkPort}..."
 try {
     $sessionKey = Get-SplunkAuthToken -Server $SplunkHost -Port $SplunkPort -Username $Username -Password $Password
-    Write-Host "Authentication successful (token length: $($sessionKey.Length))"
+    Write-Host "Authentication successful"
 }
 catch {
     Write-Error "Authentication failed: $_"

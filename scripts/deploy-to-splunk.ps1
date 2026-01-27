@@ -117,7 +117,7 @@ function Parse-SavedSearchesConf {
 
 function Get-SplunkAuthToken {
     param(
-        [string]$Host,
+        [string]$Server,
         [int]$Port,
         [string]$Username,
         [SecureString]$Password
@@ -126,15 +126,26 @@ function Get-SplunkAuthToken {
     $cred = New-Object System.Management.Automation.PSCredential($Username, $Password)
     $plainPassword = $cred.GetNetworkCredential().Password
 
-    $uri = "https://${Host}:${Port}/services/auth/login"
+    $uri = "https://${Server}:${Port}/services/auth/login"
     $body = @{
         username = $Username
         password = $plainPassword
     }
 
     try {
-        $response = Invoke-RestMethod -Uri $uri -Method Post -Body $body -ErrorAction Stop
-        return $response.sessionKey
+        # Use Invoke-WebRequest to get raw response, then parse
+        $webResponse = Invoke-WebRequest -Uri $uri -Method Post -Body $body -UseBasicParsing -ErrorAction Stop
+        $content = $webResponse.Content
+
+        # Parse XML to extract sessionKey
+        [xml]$xml = $content
+        $sessionKey = $xml.response.sessionKey
+
+        if ([string]::IsNullOrEmpty($sessionKey)) {
+            Write-Host "Debug - Response content: $content" -ForegroundColor Yellow
+            throw "Empty session key returned"
+        }
+        return $sessionKey
     }
     catch {
         throw "Failed to authenticate with Splunk: $_"
@@ -143,7 +154,7 @@ function Get-SplunkAuthToken {
 
 function Test-SavedSearchExists {
     param(
-        [string]$Host,
+        [string]$Server,
         [int]$Port,
         [string]$SessionKey,
         [string]$App,
@@ -151,7 +162,7 @@ function Test-SavedSearchExists {
     )
 
     $encodedName = [System.Web.HttpUtility]::UrlEncode($SearchName)
-    $uri = "https://${Host}:${Port}/servicesNS/nobody/${App}/saved/searches/${encodedName}"
+    $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches/${encodedName}"
 
     $headers = @{
         Authorization = "Splunk $SessionKey"
@@ -168,7 +179,7 @@ function Test-SavedSearchExists {
 
 function Deploy-SavedSearch {
     param(
-        [string]$Host,
+        [string]$Server,
         [int]$Port,
         [string]$SessionKey,
         [string]$App,
@@ -179,7 +190,7 @@ function Deploy-SavedSearch {
     )
 
     $searchName = $Search.Name
-    $exists = Test-SavedSearchExists -Host $Host -Port $Port -SessionKey $SessionKey -App $App -SearchName $searchName
+    $exists = Test-SavedSearchExists -Server $Server -Port $Port -SessionKey $SessionKey -App $App -SearchName $searchName
 
     $headers = @{
         Authorization = "Splunk $SessionKey"
@@ -225,7 +236,7 @@ function Deploy-SavedSearch {
     if ($exists) {
         # Update existing search
         $encodedName = [System.Web.HttpUtility]::UrlEncode($searchName)
-        $uri = "https://${Host}:${Port}/servicesNS/nobody/${App}/saved/searches/${encodedName}"
+        $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches/${encodedName}"
         $body.Remove('name')  # Can't update name
 
         try {
@@ -238,7 +249,7 @@ function Deploy-SavedSearch {
     }
     else {
         # Create new search
-        $uri = "https://${Host}:${Port}/servicesNS/nobody/${App}/saved/searches"
+        $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches"
 
         try {
             $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -ErrorAction Stop
@@ -291,7 +302,7 @@ if (-not $Password) {
 # Authenticate
 Write-Host "Authenticating with Splunk at ${SplunkHost}:${SplunkPort}..."
 try {
-    $sessionKey = Get-SplunkAuthToken -Host $SplunkHost -Port $SplunkPort -Username $Username -Password $Password
+    $sessionKey = Get-SplunkAuthToken -Server $SplunkHost -Port $SplunkPort -Username $Username -Password $Password
     Write-Host "Authentication successful"
 }
 catch {
@@ -313,7 +324,7 @@ foreach ($search in $searches) {
     Write-Host "Deploying: $($search.Name)..." -NoNewline
 
     $result = Deploy-SavedSearch `
-        -Host $SplunkHost `
+        -Server $SplunkHost `
         -Port $SplunkPort `
         -SessionKey $sessionKey `
         -App $App `

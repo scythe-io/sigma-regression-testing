@@ -201,7 +201,7 @@ python scripts/convert-to-splunk.py -i SCYTHE_Rules -o splunk_output
 
 ```bash
 # Dry run (show test cases without executing)
-python scripts/regression-test.py --dry-run --test-config tests/art_mapping.yaml
+python scripts/regression-test.py --splunk-host splunk.company.com --dry-run --test-config tests/art_mapping.yaml
 
 # Run tests on remote target via WinRM (sequential mode)
 python scripts/regression-test.py \

@@ -1,5 +1,7 @@
-# Generated output directories
-splunk_output/
+# Generated output directories (but track key Splunk files)
+splunk_output/*
+!splunk_output/savedsearches.conf
+!splunk_output/conversion_report.json
 test_results.json
 
 # Python
