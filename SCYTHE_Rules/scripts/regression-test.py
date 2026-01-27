@@ -328,7 +328,8 @@ def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
     )
 
 
-def generate_html_report(results: List[TestResult], report: dict, output_path: str):
+def generate_html_report(results: List[TestResult], report: dict, output_path: str,
+                         splunk_host: str = None, splunk_web_port: int = 8000, splunk_app: str = "search"):
     """Generate interactive HTML test report."""
     passed = report['summary']['passed']
     failed = report['summary']['failed']
@@ -337,6 +338,12 @@ def generate_html_report(results: List[TestResult], report: dict, output_path: s
 
     # Calculate progress bar width
     pass_pct = (passed / total * 100) if total > 0 else 0
+
+    # Build Splunk URL base for saved search links
+    splunk_base_url = None
+    if splunk_host:
+        from urllib.parse import quote
+        splunk_base_url = f"https://{splunk_host}:{splunk_web_port}/en-US/app/{splunk_app}"
 
     html = f'''<!DOCTYPE html>
 <html lang="en">
@@ -372,6 +379,8 @@ def generate_html_report(results: List[TestResult], report: dict, output_path: s
         .status.pass {{ background: #dcfce7; color: #166534; }}
         .status.fail {{ background: #fee2e2; color: #991b1b; }}
         .rules {{ font-size: 12px; color: #666; }}
+        .rules a {{ color: #3b82f6; text-decoration: none; }}
+        .rules a:hover {{ text-decoration: underline; }}
         .rules .missing {{ color: #ef4444; }}
         .rules .triggered {{ color: #22c55e; }}
         .hidden {{ display: none; }}
@@ -414,7 +423,19 @@ def generate_html_report(results: List[TestResult], report: dict, output_path: s
     for r in report['results']:
         status_class = 'pass' if r['passed'] else 'fail'
         status_text = 'PASS' if r['passed'] else 'FAIL'
-        expected = ', '.join(r['expected_rules'])
+
+        # Generate expected rules with Splunk links if available
+        if splunk_base_url:
+            expected_links = []
+            for rule in r['expected_rules']:
+                encoded_rule = quote(rule, safe='')
+                # Link to run the saved search directly
+                search_url = f"{splunk_base_url}/search?s=%2FservicesNS%2Fnobody%2F{splunk_app}%2Fsaved%2Fsearches%2F{encoded_rule}"
+                expected_links.append(f'<a href="{search_url}" target="_blank" title="Run in Splunk">{rule}</a>')
+            expected = ', '.join(expected_links)
+        else:
+            expected = ', '.join(r['expected_rules'])
+
         triggered = ', '.join(r['triggered_rules']) if r['triggered_rules'] else 'None'
         missing = ', '.join(r['missing_rules']) if r['missing_rules'] else ''
 
@@ -465,7 +486,8 @@ def generate_html_report(results: List[TestResult], report: dict, output_path: s
         f.write(html)
 
 
-def generate_report(results: List[TestResult], output_path: str):
+def generate_report(results: List[TestResult], output_path: str,
+                    splunk_host: str = None, splunk_web_port: int = 8000, splunk_app: str = "search"):
     """Generate JSON and HTML test reports."""
     passed = sum(1 for r in results if r.passed)
     failed = len(results) - passed
@@ -500,7 +522,7 @@ def generate_report(results: List[TestResult], output_path: str):
 
     # Write HTML report
     html_path = output_path.replace('.json', '.html')
-    generate_html_report(results, report, html_path)
+    generate_html_report(results, report, html_path, splunk_host, splunk_web_port, splunk_app)
 
     # Print summary
     print("\n" + "="*60)
@@ -573,7 +595,9 @@ def main():
         description='Sigma Rule Regression Testing with Atomic Red Team'
     )
     parser.add_argument('--splunk-host', required=True, help='Splunk server hostname')
-    parser.add_argument('--splunk-port', type=int, default=8089, help='Splunk management port')
+    parser.add_argument('--splunk-port', type=int, default=8089, help='Splunk management port (REST API)')
+    parser.add_argument('--splunk-web-port', type=int, default=8000, help='Splunk web UI port (for HTML report links)')
+    parser.add_argument('--splunk-app', default='search', help='Splunk app context (default: search)')
     parser.add_argument('--splunk-user', default='admin', help='Splunk username')
     parser.add_argument('--splunk-pass', help='Splunk password (or SPLUNK_PASSWORD env var)')
     parser.add_argument('--target', default='localhost', help='Target for atomic tests')
@@ -645,7 +669,7 @@ def main():
         results.append(result)
 
     # Generate report
-    generate_report(results, args.output)
+    generate_report(results, args.output, args.splunk_host, args.splunk_web_port, args.splunk_app)
 
     return 0 if all(r.passed for r in results) else 1
 
