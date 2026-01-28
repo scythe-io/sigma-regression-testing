@@ -625,6 +625,8 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='Show tests without executing')
     parser.add_argument('--skip-atomic-check', action='store_true', help='Skip Atomic RT install check')
     parser.add_argument('--batch', action='store_true', help='Run all atomics first, then check rules (faster)')
+    parser.add_argument('--test-id', action='append', help='Filter by atomic test GUID (can specify multiple)')
+    parser.add_argument('--expected-rule', action='append', help='Filter by expected rule name (can specify multiple)')
 
     args = parser.parse_args()
 
@@ -636,7 +638,33 @@ def main():
         return 0
 
     tests = load_test_config(args.test_config)
-    print(f"Loaded {len(tests)} test cases from {args.test_config}")
+    total_tests = len(tests)
+
+    # Filter tests by test ID (atomic GUID)
+    if args.test_id:
+        tests = [t for t in tests if t.atomic_test_guid in args.test_id]
+
+    # Filter tests by expected rule name
+    if args.expected_rule:
+        filtered = []
+        for t in tests:
+            for rule in args.expected_rule:
+                if any(rule.lower() in r.lower() for r in t.expected_rules):
+                    filtered.append(t)
+                    break
+        tests = filtered
+
+    if args.test_id or args.expected_rule:
+        print(f"Loaded {total_tests} test cases, filtered to {len(tests)} matching tests")
+        if len(tests) == 0:
+            print("\nNo tests matched the specified filters:")
+            if args.test_id:
+                print(f"  --test-id: {', '.join(args.test_id)}")
+            if args.expected_rule:
+                print(f"  --expected-rule: {', '.join(args.expected_rule)}")
+            return 1
+    else:
+        print(f"Loaded {len(tests)} test cases from {args.test_config}")
 
     if args.dry_run:
         print("\n[DRY RUN] Tests to execute:")
