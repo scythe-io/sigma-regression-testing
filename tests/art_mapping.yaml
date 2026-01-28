@@ -20,24 +20,14 @@ tests:
   # ============================================
   # Defense Evasion - T1070 (Indicator Removal)
   # ============================================
-  # NOTE: These atomics use wevtutil, but the current Sigma rule detects PowerShell cmdlets.
-  # Consider adding a wevtutil-based rule or finding PowerShell-based atomic tests.
 
-  - name: "Clear Security Event Log (wevtutil)"
-    description: "Validates detection of Security log clearing via wevtutil"
+  - name: "Clear Event Logs via PowerShell"
+    description: "Validates detection of event log clearing via PowerShell Clear-EventLog cmdlet"
     technique_id: "T1070.001"
-    atomic_test_guid: "e6abb60e-26b8-41da-8aae-0c35174b0967"
+    atomic_test_guid: "b13e9306-3351-4b4b-a6e8-477358b0b498"
     expected_rules:
-      - "Windows Event Log Manipulation via PowerShell"  # NOTE: May not match - rule detects PowerShell, atomic uses wevtutil
-    cleanup: false  # Log is already cleared
-
-  - name: "Clear System Event Log (wevtutil)"
-    description: "Validates detection of System log clearing"
-    technique_id: "T1070.001"
-    atomic_test_guid: "acb5d112-27d2-4255-8a36-1196d6b4c1bb"
-    expected_rules:
-      - "Windows Event Log Manipulation via PowerShell"  # NOTE: May not match - rule detects PowerShell, atomic uses wevtutil
-    cleanup: false
+      - "Windows Event Log Manipulation via PowerShell"
+    cleanup: false  # Logs are already cleared
 
   # ============================================
   # Discovery - T1082 (System Information)
@@ -102,10 +92,14 @@ tests:
       - "Domain Discovery via NET Command"
       - "Conti Ransomware Discovery Commands"
 
+  # ============================================
+  # Discovery - T1069.001 (Permission Groups Discovery)
+  # ============================================
+
   - name: "Local Admin Group Enumeration"
-    description: "Lists members of local Administrators group"
-    technique_id: "T1087.001"
-    atomic_test_guid: "a2c24fe7-7c22-4766-b30e-c3e8d1d55b21"
+    description: "Lists members of local Administrators group via net localgroup"
+    technique_id: "T1069.001"
+    atomic_test_guid: "1f454dd6-e134-44df-bebb-67de70fb6cd8"
     expected_rules:
       - "Domain Discovery via NET Command"
 
@@ -152,15 +146,12 @@ tests:
   # Persistence - T1136.001 (Create Account)
   # ============================================
 
-  - name: "Create Local User Account"
-    description: "Creates a new local user"
+  - name: "Create Local User Account (PowerShell)"
+    description: "Creates a new local user via New-LocalUser PowerShell cmdlet"
     technique_id: "T1136.001"
-    atomic_test_guid: "a524ce99-86de-4f6c-88f5-8c3439e21ed5"
+    atomic_test_guid: "bc8be0ac-475c-4fbf-9b1d-9fffd77afbde"
     expected_rules:
       - "Local User Account Creation via New-LocalUser PowerShell Cmdlet"
-    input_arguments:
-      username: "ARTTestUser"
-      password: "ARTp@ss123!"
 
   # ============================================
   # Execution - T1059.001 (PowerShell)
@@ -177,53 +168,30 @@ tests:
   # Execution - T1218.011 (Rundll32)
   # ============================================
 
-  - name: "Rundll32 Execute JavaScript"
-    description: "Rundll32 executing JavaScript"
+  - name: "Rundll32 Execute JavaScript Remote Payload"
+    description: "Rundll32 executing JavaScript via GetObject"
     technique_id: "T1218.011"
-    atomic_test_guid: "cf3bdb9a-dd11-4b6c-b0d0-9e22b68a71be"
+    atomic_test_guid: "57ba4ce9-ee7a-4f27-9928-3c70c489b59d"
     expected_rules:
       - "Rundll32 Execution with Suspicious Context"
-
-  # ============================================
-  # Collection - T1560.001 (Archive via Utility)
-  # ============================================
-
-  - name: "Data Compression with PowerShell"
-    description: "Archives files using Compress-Archive"
-    technique_id: "T1560.001"
-    atomic_test_guid: "d1334303-5975-4c93-b66a-a185e655fc0a"
-    expected_rules:
-      - "Suspicious Archive Creation"
 
   # ============================================
   # Credential Access - T1003.001 (LSASS Memory)
   # ============================================
 
   - name: "Dump LSASS with comsvcs.dll"
-    description: "Dumps LSASS using rundll32 and comsvcs.dll"
+    description: "Dumps LSASS using rundll32 and comsvcs.dll MiniDump"
     technique_id: "T1003.001"
-    atomic_test_guid: "2536dee2-12fb-459a-8c37-971c925c0b48"
+    atomic_test_guid: "2536dee2-12fb-459a-8c37-971844fa73be"
     expected_rules:
       - "Rundll32 Execution with Suspicious Context"
 
   # ============================================
-  # Defense Evasion - T1036 (Masquerading)
+  # COMMENTED OUT - Tests that don't match current rules
   # ============================================
-
-  - name: "Masquerading - Rename System Binary"
-    description: "Copies cmd.exe to masquerade as legitimate process"
-    technique_id: "T1036.003"
-    atomic_test_guid: "bc15c13f-dc95-4c87-8d7d-1e0e3b6b11a1"
-    expected_rules:
-      - "PowerShell File Masquerading Activity"
-
-  # ============================================
-  # Privilege Escalation - T1548.002 (UAC Bypass)
-  # ============================================
-
-  - name: "UAC Bypass via ICacls"
-    description: "Modifies permissions to bypass UAC"
-    technique_id: "T1548.002"
-    atomic_test_guid: "a238e48e-22c4-4a3c-8db4-32e9a9f25cc6"
-    expected_rules:
-      - "File Permission Modification via Icacls Denying Everyone Access"
+  # The following tests have been commented out because the Atomic Red Team
+  # tests don't properly trigger the expected Sigma rules:
+  #
+  # - Data Compression (T1560.001): Rule uses file_event logs which may not be enabled
+  # - Masquerading (T1036.003): Atomic renames binaries, rule detects doc-to-image renames
+  # - UAC Bypass via ICacls (T1548.002): Atomic uses different icacls parameters than rule expects
