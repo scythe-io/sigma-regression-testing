@@ -153,15 +153,23 @@ class AtomicRunner:
             args_str = ','.join(f'{k}="{v}"' for k, v in input_args.items())
             ps_cmd += f' -InputArguments @{{{args_str}}}'
 
-        if not cleanup:
-            ps_cmd += ' -NoCleanup'
-
+        # Note: Newer ART versions don't have -NoCleanup; cleanup is run separately
         ps_cmd += ' -Confirm:$false'
 
         if self.target == "localhost" and not self.use_winrm:
-            return self._run_local(ps_cmd)
+            result = self._run_local(ps_cmd)
         else:
-            return self._run_remote(ps_cmd)
+            result = self._run_remote(ps_cmd)
+
+        # Run cleanup if requested and test succeeded
+        if cleanup and result.get("success"):
+            cleanup_cmd = f'Invoke-AtomicTest {technique_id} -TestGuids {test_guid} -Cleanup -Confirm:$false'
+            if self.target == "localhost" and not self.use_winrm:
+                self._run_local(cleanup_cmd)
+            else:
+                self._run_remote(cleanup_cmd)
+
+        return result
 
     def _run_local(self, ps_cmd: str) -> Dict:
         """Run PowerShell command locally."""
