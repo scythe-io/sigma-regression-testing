@@ -608,6 +608,7 @@ def main():
     parser.add_argument('--wait-time', type=int, default=60, help='Seconds to wait for log ingestion')
     parser.add_argument('--dry-run', action='store_true', help='Show tests without executing')
     parser.add_argument('--skip-atomic-check', action='store_true', help='Skip Atomic RT install check')
+    parser.add_argument('--batch', action='store_true', help='Run all atomics first, then check rules (faster)')
 
     args = parser.parse_args()
 
@@ -664,9 +665,85 @@ def main():
 
     # Run tests
     results = []
-    for test in tests:
-        result = run_test(test, splunk, runner, args.wait_time)
-        results.append(result)
+
+    if args.batch:
+        # Batch mode: run all atomics first, then check rules
+        print("\n[BATCH MODE] Executing all atomic tests first...")
+        print("="*60)
+
+        atomic_results = []
+        for i, test in enumerate(tests, 1):
+            print(f"\n[{i}/{len(tests)}] {test.name}")
+            print(f"    Technique: {test.technique_id}")
+            print(f"    Atomic GUID: {test.atomic_test_guid}")
+
+            result = runner.run_atomic(
+                test.technique_id,
+                test.atomic_test_guid,
+                test.input_arguments,
+                test.cleanup
+            )
+
+            if result["success"]:
+                print(f"    Status: Executed successfully")
+            else:
+                print(f"    Status: FAILED - {result.get('error', 'Unknown error')}")
+
+            atomic_results.append((test, result))
+
+        # Wait for log ingestion
+        print(f"\n{'='*60}")
+        print(f"All atomics executed. Waiting {args.wait_time}s for log ingestion...")
+        print("="*60)
+        time.sleep(args.wait_time)
+
+        # Check rules for all tests
+        print("\n[BATCH MODE] Checking Splunk for detections...")
+        print("="*60)
+
+        for i, (test, atomic_result) in enumerate(atomic_results, 1):
+            print(f"\n[{i}/{len(tests)}] {test.name}")
+
+            start_time = time.time()
+            triggered_rules = []
+            error = atomic_result.get('error') if not atomic_result['success'] else None
+
+            # Check for triggered rules
+            all_alerts = splunk.get_triggered_alerts(earliest=f"-{args.wait_time + 120}s")
+            triggered_rules = [r for r in all_alerts if r in test.expected_rules]
+
+            # Also run each expected saved search directly
+            for rule_name in test.expected_rules:
+                if rule_name not in triggered_rules:
+                    count = splunk.search_saved_search(rule_name, earliest=f"-{args.wait_time + 120}s")
+                    if count > 0:
+                        triggered_rules.append(rule_name)
+                        print(f"    [+] {rule_name}: {count} matches")
+                    else:
+                        print(f"    [-] {rule_name}: no matches")
+
+            missing_rules = [r for r in test.expected_rules if r not in triggered_rules]
+            passed = len(missing_rules) == 0 and error is None
+
+            status = "PASS" if passed else "FAIL"
+            print(f"    Result: {status}")
+
+            results.append(TestResult(
+                test_name=test.name,
+                technique_id=test.technique_id,
+                atomic_guid=test.atomic_test_guid,
+                passed=passed,
+                expected_rules=test.expected_rules,
+                triggered_rules=triggered_rules,
+                missing_rules=missing_rules,
+                execution_time=time.time() - start_time,
+                error=error
+            ))
+    else:
+        # Sequential mode: run each test and check individually
+        for test in tests:
+            result = run_test(test, splunk, runner, args.wait_time)
+            results.append(result)
 
     # Generate report
     generate_report(results, args.output, args.splunk_host, args.splunk_web_port, args.splunk_app)
