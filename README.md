@@ -42,11 +42,20 @@ These rules are designed with the following principles:
 
 ## Quick Start
 
+### Install Dependencies
+
+```bash
+# Install all dependencies
+pip install -r requirements.txt
+
+# Or install manually
+pip install sigma-cli pysigma pysigma-backend-splunk pysigma-pipeline-windows PyYAML requests pywinrm
+```
+
 ### Validate Rules
 
 ```bash
-# Install sigma-cli
-pip install sigma-cli pysigma
+# sigma-cli is included in requirements.txt
 
 # Validate all rules
 sigma check SCYTHE_Rules/*.yml

@@ -105,7 +105,11 @@ cd Sigma
 ### 2. Install Python Dependencies
 
 ```bash
-pip install sigma-cli pysigma pysigma-backend-splunk pysigma-pipeline-windows PyYAML pywinrm
+# Install all dependencies from requirements file
+pip install -r requirements.txt
+
+# Or install manually
+pip install sigma-cli pysigma pysigma-backend-splunk pysigma-pipeline-windows PyYAML requests pywinrm
 ```
 
 ### 3. Verify Installation
