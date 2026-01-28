@@ -455,9 +455,15 @@ def generate_html_report(results: List[TestResult], report: dict, output_path: s
         if r['error']:
             result_html += f'<br><span class="missing">Error: {r["error"]}</span>'
 
+        # Build Atomic Red Team test link
+        technique_id = r['technique_id']
+        atomic_guid = r.get('atomic_guid', '')
+        art_url = f"https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/{technique_id}/{technique_id}.md"
+        test_name_link = f'<a href="{art_url}" target="_blank" title="View Atomic Test: {atomic_guid}">{r["test_name"]}</a>'
+
         html += f'''                <tr data-status="{status_class}">
                     <td><span class="status {status_class}">{status_text}</span></td>
-                    <td>{r['test_name']}</td>
+                    <td>{test_name_link}</td>
                     <td>{r['technique_id']}</td>
                     <td class="rules">{expected}</td>
                     <td class="rules">{result_html}</td>
