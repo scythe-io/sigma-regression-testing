@@ -190,8 +190,58 @@ tests:
   # COMMENTED OUT - Tests that don't match current rules
   # ============================================
   # The following tests have been commented out because the Atomic Red Team
-  # tests don't properly trigger the expected Sigma rules:
+  # tests don't properly trigger the expected Sigma rules. Uncomment to test
+  # after updating the corresponding Sigma rules.
+
+  # ---- T1070.001: Event Log Clearing via wevtutil ----
+  # Issue: Rule detects PowerShell cmdlets, but these atomics use wevtutil.exe
+  # Fix needed: Create Sigma rule for wevtutil-based log clearing
   #
-  # - Data Compression (T1560.001): Rule uses file_event logs which may not be enabled
-  # - Masquerading (T1036.003): Atomic renames binaries, rule detects doc-to-image renames
-  # - UAC Bypass via ICacls (T1548.002): Atomic uses different icacls parameters than rule expects
+  # - name: "Clear Security Event Log (wevtutil)"
+  #   description: "Validates detection of Security log clearing via wevtutil"
+  #   technique_id: "T1070.001"
+  #   atomic_test_guid: "e6abb60e-26b8-41da-8aae-0c35174b0967"
+  #   expected_rules:
+  #     - "Windows Event Log Clearing via Wevtutil"  # Rule does not exist yet
+  #   cleanup: false
+  #
+  # - name: "Clear System Event Log (wevtutil)"
+  #   description: "Validates detection of System log clearing via wevtutil"
+  #   technique_id: "T1070.001"
+  #   atomic_test_guid: "acb5d112-27d2-4255-8a36-1196d6b4c1bb"
+  #   expected_rules:
+  #     - "Windows Event Log Clearing via Wevtutil"  # Rule does not exist yet
+  #   cleanup: false
+
+  # ---- T1560.001: Data Compression with PowerShell ----
+  # Issue: Rule uses file_event logs which may not be enabled/forwarded to Splunk
+  # Fix needed: Ensure file event logging is configured, or create process-based rule
+  #
+  # - name: "Data Compression with PowerShell"
+  #   description: "Archives files using Compress-Archive"
+  #   technique_id: "T1560.001"
+  #   atomic_test_guid: "d1334303-5975-4c93-b66a-a185e655fc0a"
+  #   expected_rules:
+  #     - "Suspicious Archive Creation"
+
+  # ---- T1036.003: Masquerading - Rename System Binary ----
+  # Issue: Atomic renames system binaries, but rule detects document-to-image file renames
+  # Fix needed: Create Sigma rule for system binary masquerading/renaming
+  #
+  # - name: "Masquerading - Rename System Binary"
+  #   description: "Copies cmd.exe to masquerade as legitimate process"
+  #   technique_id: "T1036.003"
+  #   atomic_test_guid: "bc15c13f-dc95-4c87-8d7d-1e0e3b6b11a1"
+  #   expected_rules:
+  #     - "PowerShell File Masquerading Activity"
+
+  # ---- T1548.002: UAC Bypass via ICacls ----
+  # Issue: Atomic uses different icacls parameters than rule expects (deny Everyone)
+  # Fix needed: Verify atomic command matches rule detection, or update rule
+  #
+  # - name: "UAC Bypass via ICacls"
+  #   description: "Modifies permissions to bypass UAC"
+  #   technique_id: "T1548.002"
+  #   atomic_test_guid: "a238e48e-22c4-4a3c-8db4-32e9a9f25cc6"
+  #   expected_rules:
+  #     - "File Permission Modification via Icacls Denying Everyone Access"
