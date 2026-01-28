@@ -151,8 +151,9 @@ class AtomicRunner:
 
         if input_args:
             # PowerShell hashtables use semicolons as separators, not commas
+            # Newer ART versions use -InputArgs instead of -InputArguments
             args_str = ';'.join(f'{k}="{v}"' for k, v in input_args.items())
-            ps_cmd += f' -InputArguments @{{{args_str}}}'
+            ps_cmd += f' -InputArgs @{{{args_str}}}'
 
         # Note: Newer ART versions don't have -NoCleanup; cleanup is run separately
         ps_cmd += ' -Confirm:$false'
