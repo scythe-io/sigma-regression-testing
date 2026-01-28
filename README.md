@@ -266,10 +266,32 @@ The HTML report includes:
 | `--splunk-web-port` | 8000 | Splunk web UI port (for HTML report links) |
 | `--splunk-app` | search | Splunk app context for saved searches |
 | `--test-id` | (all) | Filter by atomic test GUID (can specify multiple) |
+| `--technique` | (all) | Filter by MITRE ATT&CK technique ID, e.g., T1018 (can specify multiple) |
 | `--expected-rule` | (all) | Filter by expected rule name - partial match (can specify multiple) |
+| `--list` | false | List tests instead of running them (works with filters) |
+| `--fields` | name,technique,guid,rules | Fields to show with --list (can specify multiple) |
+| `--format` | table | Output format for --list: table or csv |
 | `--prompt-inputs` | false | Interactively prompt for input arguments |
 | `--inputs-file` | (none) | Load input arguments from YAML file |
 | `--use-defaults` | false | Ignore custom inputs, use ART default values |
+
+**List available tests:**
+
+```bash
+# List all tests in the config
+python scripts/regression-test.py --list --test-config tests/art_mapping.yaml
+
+# List tests for a specific technique
+python scripts/regression-test.py --list --technique T1018 --test-config tests/art_mapping.yaml
+
+# List tests with specific fields
+python scripts/regression-test.py --list --fields name --fields technique --fields description --test-config tests/art_mapping.yaml
+
+# Export as CSV
+python scripts/regression-test.py --list --format csv --test-config tests/art_mapping.yaml > tests.csv
+```
+
+Available fields: `name`, `technique`, `guid`, `rules`, `description`, `cleanup`, `inputs`
 
 **Run specific tests:**
 
@@ -286,6 +308,13 @@ python scripts/regression-test.py \
   --splunk-host splunk.company.com \
   --test-config tests/art_mapping.yaml \
   --expected-rule "Domain Discovery" \
+  --dry-run
+
+# Run tests for a specific MITRE technique
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --test-config tests/art_mapping.yaml \
+  --technique T1018 \
   --dry-run
 
 # Run multiple specific tests

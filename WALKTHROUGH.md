@@ -452,9 +452,45 @@ python scripts/regression-test.py \
   --batch
 ```
 
+**List available tests:**
+
+Use `--list` to view tests without running them. This is useful for exploring what tests are available:
+
+```bash
+# List all tests
+python scripts/regression-test.py --list --test-config tests/art_mapping.yaml
+
+# List tests for a specific technique
+python scripts/regression-test.py --list --technique T1018 --test-config tests/art_mapping.yaml
+
+# List tests matching a rule name
+python scripts/regression-test.py --list --expected-rule "Domain" --test-config tests/art_mapping.yaml
+
+# Customize displayed columns
+python scripts/regression-test.py --list --fields name --fields technique --fields description --test-config tests/art_mapping.yaml
+
+# Export as CSV
+python scripts/regression-test.py --list --format csv --test-config tests/art_mapping.yaml > tests.csv
+```
+
+**Expected output (--list):**
+```
+Loaded 16 test cases from tests/art_mapping.yaml
+
+Name                                       | Technique | Atomic GUID                          | Expected Rules
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+Clear Event Logs via PowerShell            | T1070.001 | b13e9306-3351-4b4b-a6e8-477358b0b498 | Windows Event Log Manipulation via PowerShell
+System Information Discovery               | T1082     | 66571c33-5533-4b71-8d3f-02626c89c5dc | Conti Ransomware Discovery Commands
+...
+
+Total: 16 test(s)
+```
+
+Available fields: `name`, `technique`, `guid`, `rules`, `description`, `cleanup`, `inputs`
+
 **Run specific tests (filtering):**
 
-You can filter which tests to run using `--test-id` (by atomic GUID) or `--expected-rule` (by rule name):
+You can filter which tests to run using `--test-id` (by atomic GUID), `--technique` (by MITRE ATT&CK technique ID), or `--expected-rule` (by rule name):
 
 ```bash
 # Run a single test by atomic GUID
@@ -469,6 +505,13 @@ python scripts/regression-test.py \
   --splunk-host splunk.yourcompany.com \
   --test-config tests/art_mapping.yaml \
   --expected-rule "Domain Discovery" \
+  --dry-run
+
+# Run all tests for a specific MITRE technique
+python scripts/regression-test.py \
+  --splunk-host splunk.yourcompany.com \
+  --test-config tests/art_mapping.yaml \
+  --technique T1018 \
   --dry-run
 
 # Run multiple specific tests
@@ -694,7 +737,11 @@ Test-WSMan -ComputerName 192.168.1.100
 | Deploy (actual) | `.\scripts\deploy-to-splunk.ps1 -SplunkHost HOST -Username USER` |
 | Test (dry run) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --dry-run` |
 | Test (full) | `python scripts/regression-test.py --splunk-host HOST --splunk-user USER --target IP --winrm-user USER --winrm-pass PASS --test-config tests/art_mapping.yaml` |
+| List tests | `python scripts/regression-test.py --list --test-config tests/art_mapping.yaml` |
+| List tests (filtered) | `python scripts/regression-test.py --list --technique T1018 --test-config tests/art_mapping.yaml` |
+| List tests (CSV) | `python scripts/regression-test.py --list --format csv --test-config tests/art_mapping.yaml` |
 | Test (by GUID) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --test-id GUID --dry-run` |
+| Test (by technique) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --technique T1018 --dry-run` |
 | Test (by rule) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --expected-rule "Rule Name" --dry-run` |
 | Test (prompt inputs) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --prompt-inputs` |
 | Test (inputs file) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --inputs-file tests/inputs.yaml` |

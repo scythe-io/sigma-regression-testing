@@ -672,11 +672,84 @@ def create_example_config(path: str):
         yaml.dump(example, f, default_flow_style=False, sort_keys=False)
 
 
+def list_tests(tests: List[AtomicTest], fields: List[str], output_format: str = 'table'):
+    """Display tests in a formatted table or other format."""
+    if not tests:
+        print("No tests to display.")
+        return
+
+    # Define available fields and their display names
+    field_map = {
+        'name': ('Name', lambda t: t.name),
+        'technique': ('Technique', lambda t: t.technique_id),
+        'guid': ('Atomic GUID', lambda t: t.atomic_test_guid),
+        'rules': ('Expected Rules', lambda t: ', '.join(t.expected_rules)),
+        'description': ('Description', lambda t: t.description[:50] + '...' if len(t.description) > 50 else t.description),
+        'cleanup': ('Cleanup', lambda t: 'Yes' if t.cleanup else 'No'),
+        'inputs': ('Has Inputs', lambda t: 'Yes' if t.input_arguments else 'No'),
+    }
+
+    # Default fields if none specified
+    if not fields:
+        fields = ['name', 'technique', 'guid', 'rules']
+
+    # Validate fields
+    valid_fields = []
+    for f in fields:
+        f_lower = f.lower()
+        if f_lower in field_map:
+            valid_fields.append(f_lower)
+        else:
+            print(f"Warning: Unknown field '{f}'. Available: {', '.join(field_map.keys())}")
+
+    if not valid_fields:
+        valid_fields = ['name', 'technique', 'guid', 'rules']
+
+    if output_format == 'csv':
+        # CSV output
+        headers = [field_map[f][0] for f in valid_fields]
+        print(','.join(f'"{h}"' for h in headers))
+        for test in tests:
+            values = [field_map[f][1](test) for f in valid_fields]
+            print(','.join(f'"{v}"' for v in values))
+    else:
+        # Table output - calculate column widths
+        headers = [field_map[f][0] for f in valid_fields]
+        rows = [[field_map[f][1](test) for f in valid_fields] for test in tests]
+
+        # Calculate max width for each column
+        widths = [len(h) for h in headers]
+        for row in rows:
+            for i, val in enumerate(row):
+                widths[i] = max(widths[i], len(str(val)))
+
+        # Cap widths to prevent overly wide columns
+        max_width = 60
+        widths = [min(w, max_width) for w in widths]
+
+        # Print header
+        header_line = ' | '.join(h.ljust(widths[i]) for i, h in enumerate(headers))
+        print(header_line)
+        print('-' * len(header_line))
+
+        # Print rows
+        for row in rows:
+            values = []
+            for i, val in enumerate(row):
+                val_str = str(val)
+                if len(val_str) > widths[i]:
+                    val_str = val_str[:widths[i]-3] + '...'
+                values.append(val_str.ljust(widths[i]))
+            print(' | '.join(values))
+
+        print(f"\nTotal: {len(tests)} test(s)")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Sigma Rule Regression Testing with Atomic Red Team'
     )
-    parser.add_argument('--splunk-host', required=True, help='Splunk server hostname')
+    parser.add_argument('--splunk-host', help='Splunk server hostname (required unless using --list)')
     parser.add_argument('--splunk-port', type=int, default=8089, help='Splunk management port (REST API)')
     parser.add_argument('--splunk-web-port', type=int, default=8000, help='Splunk web UI port (for HTML report links)')
     parser.add_argument('--splunk-app', default='search', help='Splunk app context (default: search)')
@@ -693,6 +766,10 @@ def main():
     parser.add_argument('--batch', action='store_true', help='Run all atomics first, then check rules (faster)')
     parser.add_argument('--test-id', action='append', help='Filter by atomic test GUID (can specify multiple)')
     parser.add_argument('--expected-rule', action='append', help='Filter by expected rule name (can specify multiple)')
+    parser.add_argument('--technique', action='append', help='Filter by MITRE ATT&CK technique ID, e.g., T1018 (can specify multiple)')
+    parser.add_argument('--list', action='store_true', help='List tests instead of running them (works with filters)')
+    parser.add_argument('--fields', action='append', help='Fields to display with --list: name, technique, guid, rules, description, cleanup, inputs')
+    parser.add_argument('--format', choices=['table', 'csv'], default='table', help='Output format for --list (default: table)')
     parser.add_argument('--prompt-inputs', action='store_true', help='Prompt for input arguments interactively')
     parser.add_argument('--inputs-file', help='YAML file with input arguments (overrides test config inputs)')
     parser.add_argument('--use-defaults', action='store_true', help='Use ART default values, ignore custom inputs')
@@ -717,6 +794,16 @@ def main():
     if args.test_id:
         tests = [t for t in tests if t.atomic_test_guid in args.test_id]
 
+    # Filter tests by technique ID (case-insensitive, supports partial match)
+    if args.technique:
+        filtered = []
+        for t in tests:
+            for tech in args.technique:
+                if tech.lower() in t.technique_id.lower():
+                    filtered.append(t)
+                    break
+        tests = filtered
+
     # Filter tests by expected rule name
     if args.expected_rule:
         filtered = []
@@ -727,17 +814,30 @@ def main():
                     break
         tests = filtered
 
-    if args.test_id or args.expected_rule:
+    if args.test_id or args.expected_rule or args.technique:
         print(f"Loaded {total_tests} test cases, filtered to {len(tests)} matching tests")
         if len(tests) == 0:
             print("\nNo tests matched the specified filters:")
             if args.test_id:
                 print(f"  --test-id: {', '.join(args.test_id)}")
+            if args.technique:
+                print(f"  --technique: {', '.join(args.technique)}")
             if args.expected_rule:
                 print(f"  --expected-rule: {', '.join(args.expected_rule)}")
             return 1
     else:
         print(f"Loaded {len(tests)} test cases from {args.test_config}")
+
+    # List mode - display tests and exit
+    if args.list:
+        print()
+        list_tests(tests, args.fields or [], args.format)
+        return 0
+
+    # Require splunk-host for non-list operations
+    if not args.splunk_host:
+        print("Error: --splunk-host is required (unless using --list)")
+        return 1
 
     # Handle input arguments
     if args.use_defaults:

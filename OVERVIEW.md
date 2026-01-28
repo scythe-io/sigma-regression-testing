@@ -279,7 +279,11 @@ The `regression-test.py` script supports two modes:
 | `--skip-atomic-check` | Skip checking if ART is installed |
 | `--dry-run` | Show tests without executing |
 | `--test-id` | Filter by atomic test GUID (can specify multiple) |
+| `--technique` | Filter by MITRE ATT&CK technique ID, e.g., T1018 (can specify multiple) |
 | `--expected-rule` | Filter by expected rule name - partial match (can specify multiple) |
+| `--list` | List tests instead of running them (works with filters) |
+| `--fields` | Fields to show with --list: name, technique, guid, rules, description, cleanup, inputs |
+| `--format` | Output format for --list: table (default) or csv |
 | `--prompt-inputs` | Interactively prompt for input arguments |
 | `--inputs-file` | Load input arguments from YAML file |
 | `--use-defaults` | Ignore custom inputs, use ART default values |
