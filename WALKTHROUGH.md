@@ -112,7 +112,28 @@ pip install -r requirements.txt
 pip install sigma-cli pysigma pysigma-backend-splunk pysigma-pipeline-windows PyYAML requests pywinrm
 ```
 
-### 3. Verify Installation
+### 3. Enable Tab Completion (Optional)
+
+For tab completion of `regression-test.py` flags:
+
+```bash
+# Install argcomplete
+pip install argcomplete
+```
+
+**PowerShell:**
+```powershell
+. .\scripts\Enable-TabCompletion.ps1
+```
+
+**Bash:**
+```bash
+eval "$(register-python-argcomplete regression-test.py)"
+```
+
+Then you can use `python scripts/regression-test.py --<TAB>` to see available options.
+
+### 4. Verify Installation
 
 ```bash
 sigma version

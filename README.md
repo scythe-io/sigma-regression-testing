@@ -50,6 +50,10 @@ pip install -r requirements.txt
 
 # Or install manually
 pip install sigma-cli pysigma pysigma-backend-splunk pysigma-pipeline-windows PyYAML requests pywinrm
+
+# Optional: Enable tab completion for regression-test.py
+pip install argcomplete
+. ./scripts/Enable-TabCompletion.ps1  # PowerShell
 ```
 
 ### Validate Rules

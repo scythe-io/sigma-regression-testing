@@ -76,6 +76,27 @@ Passing tests include:
 
 ---
 
+## Installation
+
+Install all required dependencies with:
+
+```bash
+pip install -r requirements.txt
+```
+
+This installs:
+- `sigma-cli`, `pysigma` - Rule validation and conversion
+- `pysigma-backend-splunk`, `pysigma-pipeline-windows` - Splunk conversion
+- `PyYAML`, `requests` - Core dependencies
+- `pywinrm` - Remote Atomic Red Team execution
+
+For tab completion support, also install:
+```bash
+pip install argcomplete
+```
+
+---
+
 ## What's Next
 
 - **Rule tuning** - Investigate why some rules didn't fire and adjust detection logic
@@ -221,6 +242,15 @@ Passing tests include:
 | `deploy-to-splunk.ps1` | PowerShell | Deploys saved searches to Splunk via REST API |
 | `regression-test.py` | Python | Runs Atomic Red Team tests, validates Splunk detections, generates JSON and HTML reports |
 | `update-readme-stats.py` | Python | Updates README.md with current rule counts |
+| `Enable-TabCompletion.ps1` | PowerShell | Enables tab completion for regression-test.py in PowerShell |
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `requirements.txt` | Python dependencies - install with `pip install -r requirements.txt` |
+| `tests/art_mapping.yaml` | Atomic Red Team test to Sigma rule mappings |
+| `splunk_output/savedsearches.conf` | Generated Splunk saved searches (auto-updated by CI) |
 
 ---
 
