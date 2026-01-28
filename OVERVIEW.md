@@ -250,6 +250,9 @@ The `regression-test.py` script supports two modes:
 | `--dry-run` | Show tests without executing |
 | `--test-id` | Filter by atomic test GUID (can specify multiple) |
 | `--expected-rule` | Filter by expected rule name - partial match (can specify multiple) |
+| `--prompt-inputs` | Interactively prompt for input arguments |
+| `--inputs-file` | Load input arguments from YAML file |
+| `--use-defaults` | Ignore custom inputs, use ART default values |
 
 ### Test Output
 

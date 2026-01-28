@@ -254,6 +254,9 @@ The HTML report includes:
 | `--splunk-app` | search | Splunk app context for saved searches |
 | `--test-id` | (all) | Filter by atomic test GUID (can specify multiple) |
 | `--expected-rule` | (all) | Filter by expected rule name - partial match (can specify multiple) |
+| `--prompt-inputs` | false | Interactively prompt for input arguments |
+| `--inputs-file` | (none) | Load input arguments from YAML file |
+| `--use-defaults` | false | Ignore custom inputs, use ART default values |
 
 **Run specific tests:**
 
@@ -279,6 +282,44 @@ python scripts/regression-test.py \
   --test-id f1bf6c8f-9016-4edf-aff9-80b65f5d711f \
   --test-id 80887bec-5a9b-4efc-a81d-f83eb2eb32ab \
   --skip-atomic-check
+```
+
+**Custom input arguments:**
+
+```bash
+# Prompt for inputs interactively
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --test-config tests/art_mapping.yaml \
+  --test-id bc8be0ac-475c-4fbf-9b1d-9fffd77afbde \
+  --prompt-inputs \
+  --skip-atomic-check
+
+# Load inputs from file
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --test-config tests/art_mapping.yaml \
+  --inputs-file tests/inputs.yaml \
+  --skip-atomic-check
+
+# Use ART defaults (ignore custom inputs in test config)
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --test-config tests/art_mapping.yaml \
+  --use-defaults \
+  --skip-atomic-check
+```
+
+**Inputs file format (`tests/inputs.yaml`):**
+
+```yaml
+# By atomic GUID
+bc8be0ac-475c-4fbf-9b1d-9fffd77afbde:
+  username: "CustomUser"
+
+# Or by test name
+"Create Local User Account (PowerShell)":
+  username: "AnotherUser"
 ```
 
 ### Installing Atomic Red Team

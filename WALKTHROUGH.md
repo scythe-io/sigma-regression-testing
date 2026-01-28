@@ -476,6 +476,52 @@ Loaded 16 test cases, filtered to 2 matching tests
     Expected Rules: Domain Discovery via NET Command, Conti Ransomware Discovery Commands
 ```
 
+**Custom input arguments:**
+
+Some atomic tests accept input arguments (e.g., username, password, file paths). You can control these with:
+
+```bash
+# Prompt for inputs interactively during test execution
+python scripts/regression-test.py \
+  --splunk-host splunk.yourcompany.com \
+  --test-config tests/art_mapping.yaml \
+  --test-id bc8be0ac-475c-4fbf-9b1d-9fffd77afbde \
+  --prompt-inputs \
+  --skip-atomic-check
+
+# Load inputs from a YAML file
+python scripts/regression-test.py \
+  --splunk-host splunk.yourcompany.com \
+  --test-config tests/art_mapping.yaml \
+  --inputs-file tests/inputs.yaml \
+  --skip-atomic-check
+
+# Use ART default values (ignore inputs in test config)
+python scripts/regression-test.py \
+  --splunk-host splunk.yourcompany.com \
+  --test-config tests/art_mapping.yaml \
+  --use-defaults \
+  --skip-atomic-check
+```
+
+**Inputs file format (`tests/inputs.yaml`):**
+```yaml
+# Reference by atomic GUID
+bc8be0ac-475c-4fbf-9b1d-9fffd77afbde:
+  username: "CustomTestUser"
+
+# Or reference by test name
+"Create Local User Account (PowerShell)":
+  username: "AnotherTestUser"
+```
+
+**Interactive prompt example:**
+```
+Input arguments for: Create Local User Account (PowerShell)
+(Press Enter to use default value shown in brackets)
+  username [T1136.001_PowerShell]: MyCustomUser
+```
+
 **Expected output (batch mode):**
 ```
 Sigma Rule Regression Testing (Batch Mode)
@@ -625,6 +671,8 @@ Test-WSMan -ComputerName 192.168.1.100
 | Test (full) | `python scripts/regression-test.py --splunk-host HOST --splunk-user USER --target IP --winrm-user USER --winrm-pass PASS --test-config tests/art_mapping.yaml` |
 | Test (by GUID) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --test-id GUID --dry-run` |
 | Test (by rule) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --expected-rule "Rule Name" --dry-run` |
+| Test (prompt inputs) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --prompt-inputs` |
+| Test (inputs file) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --inputs-file tests/inputs.yaml` |
 
 ---
 
