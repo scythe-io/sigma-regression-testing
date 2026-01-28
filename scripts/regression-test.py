@@ -150,7 +150,8 @@ class AtomicRunner:
         ps_cmd = f'Invoke-AtomicTest {technique_id} -TestGuids {test_guid}'
 
         if input_args:
-            args_str = ','.join(f'{k}="{v}"' for k, v in input_args.items())
+            # PowerShell hashtables use semicolons as separators, not commas
+            args_str = ';'.join(f'{k}="{v}"' for k, v in input_args.items())
             ps_cmd += f' -InputArguments @{{{args_str}}}'
 
         # Note: Newer ART versions don't have -NoCleanup; cleanup is run separately
