@@ -258,6 +258,52 @@ def load_test_config(config_path: str) -> List[AtomicTest]:
     return tests
 
 
+def load_inputs_file(inputs_path: str) -> Dict[str, Dict[str, Any]]:
+    """
+    Load input arguments from a YAML file.
+
+    Format:
+        # By atomic GUID
+        f1bf6c8f-9016-4edf-aff9-80b65f5d711f:
+            username: "TestUser"
+            password: "TestPass123!"
+
+        # Or by test name
+        "Create Local User Account":
+            username: "MyUser"
+    """
+    with open(inputs_path, 'r', encoding='utf-8') as f:
+        return yaml.safe_load(f) or {}
+
+
+def prompt_for_inputs(test: AtomicTest) -> Dict[str, Any]:
+    """Prompt user for input arguments for a test."""
+    if not test.input_arguments:
+        return {}
+
+    print(f"\n  Input arguments for: {test.name}")
+    print(f"  (Press Enter to use default value shown in brackets)")
+
+    inputs = {}
+    for key, default_value in test.input_arguments.items():
+        prompt = f"    {key} [{default_value}]: "
+        user_input = input(prompt).strip()
+        inputs[key] = user_input if user_input else default_value
+
+    return inputs
+
+
+def apply_inputs_from_file(tests: List[AtomicTest], inputs: Dict[str, Dict[str, Any]]) -> None:
+    """Apply input arguments from file to tests (modifies tests in place)."""
+    for test in tests:
+        # Check by GUID first
+        if test.atomic_test_guid in inputs:
+            test.input_arguments.update(inputs[test.atomic_test_guid])
+        # Then check by test name
+        elif test.name in inputs:
+            test.input_arguments.update(inputs[test.name])
+
+
 def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
              wait_time: int = 60) -> TestResult:
     """Execute a single test case."""
@@ -627,6 +673,9 @@ def main():
     parser.add_argument('--batch', action='store_true', help='Run all atomics first, then check rules (faster)')
     parser.add_argument('--test-id', action='append', help='Filter by atomic test GUID (can specify multiple)')
     parser.add_argument('--expected-rule', action='append', help='Filter by expected rule name (can specify multiple)')
+    parser.add_argument('--prompt-inputs', action='store_true', help='Prompt for input arguments interactively')
+    parser.add_argument('--inputs-file', help='YAML file with input arguments (overrides test config inputs)')
+    parser.add_argument('--use-defaults', action='store_true', help='Use ART default values, ignore custom inputs')
 
     args = parser.parse_args()
 
@@ -666,6 +715,24 @@ def main():
     else:
         print(f"Loaded {len(tests)} test cases from {args.test_config}")
 
+    # Handle input arguments
+    if args.use_defaults:
+        # Clear all custom inputs, use ART defaults
+        print("Using ART default input values (ignoring custom inputs)")
+        for test in tests:
+            test.input_arguments = {}
+    elif args.inputs_file:
+        # Load inputs from file
+        if not Path(args.inputs_file).exists():
+            print(f"Error: Inputs file not found: {args.inputs_file}")
+            return 1
+        print(f"Loading input arguments from: {args.inputs_file}")
+        file_inputs = load_inputs_file(args.inputs_file)
+        apply_inputs_from_file(tests, file_inputs)
+    elif args.prompt_inputs:
+        # Will prompt during test execution (handled later)
+        print("Will prompt for input arguments during test execution")
+
     if args.dry_run:
         print("\n[DRY RUN] Tests to execute:")
         for test in tests:
@@ -673,6 +740,12 @@ def main():
             print(f"    Technique: {test.technique_id}")
             print(f"    Atomic GUID: {test.atomic_test_guid}")
             print(f"    Expected Rules: {', '.join(test.expected_rules)}")
+            if test.input_arguments:
+                print(f"    Input Arguments:")
+                for k, v in test.input_arguments.items():
+                    print(f"      {k}: {v}")
+            elif args.prompt_inputs:
+                print(f"    Input Arguments: (will prompt)")
         return 0
 
     # Initialize clients
@@ -709,6 +782,14 @@ def main():
 
     # Run tests
     results = []
+
+    # If prompting for inputs, collect them upfront in batch mode
+    if args.prompt_inputs and args.batch:
+        print("\n[INPUT COLLECTION] Collecting input arguments for all tests...")
+        print("="*60)
+        for test in tests:
+            if test.input_arguments:
+                test.input_arguments = prompt_for_inputs(test)
 
     if args.batch:
         # Batch mode: run all atomics first, then check rules
@@ -786,6 +867,9 @@ def main():
     else:
         # Sequential mode: run each test and check individually
         for test in tests:
+            # Prompt for inputs if requested
+            if args.prompt_inputs and test.input_arguments:
+                test.input_arguments = prompt_for_inputs(test)
             result = run_test(test, splunk, runner, args.wait_time)
             results.append(result)
 
