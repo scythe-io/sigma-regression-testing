@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """
 Sigma Rule Regression Testing with Atomic Red Team
 
@@ -13,6 +14,18 @@ Requirements:
     - Invoke-AtomicTest PowerShell module
     - WinRM or SSH access to test endpoint
     - Splunk with deployed Sigma rules
+
+Tab Completion:
+    pip install argcomplete
+    # Bash: eval "$(register-python-argcomplete regression-test.py)"
+    # PowerShell: Register-ArgumentCompleter -Native -CommandName regression-test.py -ScriptBlock {
+    #     param($wordToComplete, $commandAst, $cursorPosition)
+    #     $env:_ARGCOMPLETE = 1
+    #     $env:_ARGCOMPLETE_IFS = "`n"
+    #     $env:COMP_LINE = $commandAst.ToString()
+    #     $env:COMP_POINT = $cursorPosition
+    #     python $commandAst.CommandElements[0].Value 2>$null | ForEach-Object { $_ }
+    # }
 """
 
 import argparse
@@ -26,6 +39,13 @@ from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
+
+# Optional tab completion support
+try:
+    import argcomplete
+    HAS_ARGCOMPLETE = True
+except ImportError:
+    HAS_ARGCOMPLETE = False
 
 # Disable SSL warnings for self-signed certs
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -676,6 +696,10 @@ def main():
     parser.add_argument('--prompt-inputs', action='store_true', help='Prompt for input arguments interactively')
     parser.add_argument('--inputs-file', help='YAML file with input arguments (overrides test config inputs)')
     parser.add_argument('--use-defaults', action='store_true', help='Use ART default values, ignore custom inputs')
+
+    # Enable tab completion if argcomplete is installed
+    if HAS_ARGCOMPLETE:
+        argcomplete.autocomplete(parser)
 
     args = parser.parse_args()
 
