@@ -252,6 +252,34 @@ The HTML report includes:
 |--------|---------|-------------|
 | `--splunk-web-port` | 8000 | Splunk web UI port (for HTML report links) |
 | `--splunk-app` | search | Splunk app context for saved searches |
+| `--test-id` | (all) | Filter by atomic test GUID (can specify multiple) |
+| `--expected-rule` | (all) | Filter by expected rule name - partial match (can specify multiple) |
+
+**Run specific tests:**
+
+```bash
+# Run a single test by GUID
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --test-config tests/art_mapping.yaml \
+  --test-id f1bf6c8f-9016-4edf-aff9-80b65f5d711f \
+  --dry-run
+
+# Run tests for a specific rule (partial match)
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --test-config tests/art_mapping.yaml \
+  --expected-rule "Domain Discovery" \
+  --dry-run
+
+# Run multiple specific tests
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --test-config tests/art_mapping.yaml \
+  --test-id f1bf6c8f-9016-4edf-aff9-80b65f5d711f \
+  --test-id 80887bec-5a9b-4efc-a81d-f83eb2eb32ab \
+  --skip-atomic-check
+```
 
 ### Installing Atomic Red Team
 

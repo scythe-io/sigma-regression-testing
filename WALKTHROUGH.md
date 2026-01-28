@@ -427,6 +427,55 @@ python scripts/regression-test.py \
   --batch
 ```
 
+**Run specific tests (filtering):**
+
+You can filter which tests to run using `--test-id` (by atomic GUID) or `--expected-rule` (by rule name):
+
+```bash
+# Run a single test by atomic GUID
+python scripts/regression-test.py \
+  --splunk-host splunk.yourcompany.com \
+  --test-config tests/art_mapping.yaml \
+  --test-id f1bf6c8f-9016-4edf-aff9-80b65f5d711f \
+  --dry-run
+
+# Run all tests for a specific rule (partial match)
+python scripts/regression-test.py \
+  --splunk-host splunk.yourcompany.com \
+  --test-config tests/art_mapping.yaml \
+  --expected-rule "Domain Discovery" \
+  --dry-run
+
+# Run multiple specific tests
+python scripts/regression-test.py \
+  --splunk-host splunk.yourcompany.com \
+  --splunk-user admin \
+  --target 192.168.1.100 \
+  --winrm-user "YOURDOM\Administrator" \
+  --winrm-pass "YourPassword123!" \
+  --test-config tests/art_mapping.yaml \
+  --test-id f1bf6c8f-9016-4edf-aff9-80b65f5d711f \
+  --test-id 80887bec-5a9b-4efc-a81d-f83eb2eb32ab \
+  --skip-atomic-check
+```
+
+**Expected output (filtered):**
+```
+Loaded 16 test cases, filtered to 2 matching tests
+
+[DRY RUN] Tests to execute:
+
+  Remote System Discovery (net view)
+    Technique: T1018
+    Atomic GUID: f1bf6c8f-9016-4edf-aff9-80b65f5d711f
+    Expected Rules: Domain Discovery via NET Command
+
+  Local Account Discovery (net user)
+    Technique: T1087.001
+    Atomic GUID: 80887bec-5a9b-4efc-a81d-f83eb2eb32ab
+    Expected Rules: Domain Discovery via NET Command, Conti Ransomware Discovery Commands
+```
+
 **Expected output (batch mode):**
 ```
 Sigma Rule Regression Testing (Batch Mode)
@@ -574,6 +623,8 @@ Test-WSMan -ComputerName 192.168.1.100
 | Deploy (actual) | `.\scripts\deploy-to-splunk.ps1 -SplunkHost HOST -Username USER` |
 | Test (dry run) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --dry-run` |
 | Test (full) | `python scripts/regression-test.py --splunk-host HOST --splunk-user USER --target IP --winrm-user USER --winrm-pass PASS --test-config tests/art_mapping.yaml` |
+| Test (by GUID) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --test-id GUID --dry-run` |
+| Test (by rule) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --expected-rule "Rule Name" --dry-run` |
 
 ---
 
