@@ -98,7 +98,7 @@ sysmon64.exe -accepteula -i sysmonconfig.xml
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/sigma-regression-testing.git
+git clone https://github.com/scythe-io/sigma-regression-testing.git
 cd sigma-regression-testing
 ```
 
