@@ -98,8 +98,8 @@ sysmon64.exe -accepteula -i sysmonconfig.xml
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/Sigma.git
-cd Sigma
+git clone https://github.com/your-org/sigma-regression-testing.git
+cd sigma-regression-testing
 ```
 
 ### 2. Install Python Dependencies
