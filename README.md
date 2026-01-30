@@ -253,11 +253,16 @@ The regression test script generates two output files:
 - `test_results.html` - Interactive HTML report with filtering and visual summary
 
 The HTML report includes:
-- Summary cards showing total tests, passed, failed, and pass rate
+- Summary cards showing total tests, passed, failed, pass rate, and untested rules count
 - Visual progress bar for quick pass/fail overview
 - Filterable table by status (All/Passed/Failed) and search text
 - Details for each test including expected rules, triggered rules, and missing rules
 - **Clickable Splunk links** for each expected rule that open the saved search directly in Splunk (with last 15 minutes time range)
+- **Untested Rules Section** showing which rules were not tested and why:
+  - No test mapping (rule exists but no Atomic test mapped)
+  - Non-Windows/skipped (Linux, M365, or other non-Windows rules)
+  - Conversion failed (rules that failed Splunk conversion)
+  - Test error (tests that encountered errors during execution)
 
 **Additional Options:**
 
@@ -274,6 +279,9 @@ The HTML report includes:
 | `--prompt-inputs` | false | Interactively prompt for input arguments |
 | `--inputs-file` | (none) | Load input arguments from YAML file |
 | `--use-defaults` | false | Ignore custom inputs, use ART default values |
+| `--conversion-report` | splunk_output/conversion_report.json | Path to Sigma conversion report (for untested rules tracking) |
+| `--savedsearches` | splunk_output/savedsearches.conf | Path to Splunk savedsearches.conf (for untested rules tracking) |
+| `--skip-untested-report` | false | Skip generating the untested rules section |
 
 **List available tests:**
 

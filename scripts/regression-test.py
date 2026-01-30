@@ -78,6 +78,14 @@ class TestResult:
     error: Optional[str] = None
 
 
+@dataclass
+class UntestedRule:
+    """A rule that was not tested, with reason."""
+    rule_name: str
+    reason: str  # 'no_mapping', 'skipped_non_windows', 'error', 'excluded'
+    details: Optional[str] = None
+
+
 class SplunkClient:
     """Client for querying Splunk via REST API."""
 
@@ -258,6 +266,111 @@ $ErrorActionPreference = "Continue"
         return result["success"] and "Invoke-AtomicRedTeam" in result.get("output", "")
 
 
+def load_all_rules(conversion_report_path: str = None, savedsearches_path: str = None) -> Dict[str, List[str]]:
+    """
+    Load all available rules and categorize them.
+
+    Returns dict with:
+        - 'converted': List of rule names that were converted to Splunk
+        - 'skipped': List of rules skipped (non-Windows)
+        - 'failed': List of rules that failed conversion
+    """
+    rules = {'converted': [], 'skipped': [], 'failed': []}
+
+    # Try conversion report first
+    if conversion_report_path and Path(conversion_report_path).exists():
+        with open(conversion_report_path, 'r', encoding='utf-8') as f:
+            report = json.load(f)
+
+        # Get rule names from the report
+        rules['skipped'] = report.get('details', {}).get('skipped', [])
+        rules['failed'] = report.get('details', {}).get('failed', [])
+
+        # For converted rules, we need to get actual names from savedsearches.conf
+        # since the report only has filenames
+
+    # Parse savedsearches.conf to get actual rule names
+    if savedsearches_path and Path(savedsearches_path).exists():
+        with open(savedsearches_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        import re
+        # Match stanza names like [Rule Name Here]
+        rule_names = re.findall(r'^\[([^\]]+)\]', content, re.MULTILINE)
+        # Filter out 'default' stanza
+        rules['converted'] = [name for name in rule_names if name.lower() != 'default']
+
+    return rules
+
+
+def get_tested_rules(tests: List['AtomicTest']) -> set:
+    """Extract all rule names that are mapped to tests."""
+    tested = set()
+    for test in tests:
+        tested.update(test.expected_rules)
+    return tested
+
+
+def categorize_untested_rules(
+    all_rules: Dict[str, List[str]],
+    tested_rules: set,
+    test_results: List['TestResult'] = None
+) -> List[UntestedRule]:
+    """
+    Categorize rules that were not tested.
+
+    Returns list of UntestedRule with reasons:
+        - no_mapping: Rule exists but no atomic test is mapped
+        - skipped_non_windows: Rule was skipped (Linux, M365, etc.)
+        - conversion_failed: Rule failed to convert to Splunk
+        - test_error: Rule was mapped but test had an error
+    """
+    untested = []
+
+    # Rules with test errors
+    error_rules = set()
+    if test_results:
+        for result in test_results:
+            if result.error:
+                for rule in result.expected_rules:
+                    error_rules.add(rule)
+                    untested.append(UntestedRule(
+                        rule_name=rule,
+                        reason='test_error',
+                        details=f"Test '{result.test_name}' error: {result.error[:100]}"
+                    ))
+
+    # Converted rules with no mapping
+    for rule_name in all_rules.get('converted', []):
+        if rule_name not in tested_rules and rule_name not in error_rules:
+            untested.append(UntestedRule(
+                rule_name=rule_name,
+                reason='no_mapping',
+                details='No Atomic Red Team test mapped to this rule'
+            ))
+
+    # Skipped rules (non-Windows)
+    for filename in all_rules.get('skipped', []):
+        # Extract a readable name from filename
+        rule_name = filename.replace('.yml', '').replace('_', ' ').title()
+        untested.append(UntestedRule(
+            rule_name=rule_name,
+            reason='skipped_non_windows',
+            details=f'Rule file: {filename} (Linux/M365/non-Windows)'
+        ))
+
+    # Failed conversions
+    for filename in all_rules.get('failed', []):
+        rule_name = filename.replace('.yml', '').replace('_', ' ').title()
+        untested.append(UntestedRule(
+            rule_name=rule_name,
+            reason='conversion_failed',
+            details=f'Rule file: {filename} failed Splunk conversion'
+        ))
+
+    return untested
+
+
 def load_test_config(config_path: str) -> List[AtomicTest]:
     """Load test mappings from YAML configuration."""
     with open(config_path, 'r', encoding='utf-8') as f:
@@ -405,12 +518,14 @@ def run_test(test: AtomicTest, splunk: SplunkClient, runner: AtomicRunner,
 
 
 def generate_html_report(results: List[TestResult], report: dict, output_path: str,
-                         splunk_host: str = None, splunk_web_port: int = 8000, splunk_app: str = "search"):
+                         splunk_host: str = None, splunk_web_port: int = 8000, splunk_app: str = "search",
+                         untested_rules: List[UntestedRule] = None):
     """Generate interactive HTML test report."""
     passed = report['summary']['passed']
     failed = report['summary']['failed']
     total = report['summary']['total_tests']
     pass_rate = report['summary']['pass_rate']
+    untested_count = len(untested_rules) if untested_rules else 0
 
     # Calculate progress bar width
     pass_pct = (passed / total * 100) if total > 0 else 0
@@ -441,6 +556,7 @@ def generate_html_report(results: List[TestResult], report: dict, output_path: s
         .card.failed .value {{ color: #ef4444; }}
         .card.total .value {{ color: #3b82f6; }}
         .card.rate .value {{ color: #8b5cf6; }}
+        .card.untested .value {{ color: #f59e0b; }}
         .progress-bar {{ background: #e5e7eb; height: 24px; border-radius: 12px; overflow: hidden; margin-bottom: 30px; }}
         .progress-fill {{ height: 100%; background: linear-gradient(90deg, #22c55e, #16a34a); width: {pass_pct}%; transition: width 0.3s; }}
         .filters {{ margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }}
@@ -472,6 +588,7 @@ def generate_html_report(results: List[TestResult], report: dict, output_path: s
             <div class="card passed"><h3>Passed</h3><div class="value">{passed}</div></div>
             <div class="card failed"><h3>Failed</h3><div class="value">{failed}</div></div>
             <div class="card rate"><h3>Pass Rate</h3><div class="value">{pass_rate}</div></div>
+            <div class="card untested"><h3>Untested Rules</h3><div class="value">{untested_count}</div></div>
         </div>
 
         <div class="progress-bar"><div class="progress-fill"></div></div>
@@ -538,7 +655,70 @@ def generate_html_report(results: List[TestResult], report: dict, output_path: s
 
     html += '''            </tbody>
         </table>
-    </div>
+'''
+
+    # Add untested rules section if there are any
+    if untested_rules:
+        # Group by reason
+        by_reason = {}
+        for rule in untested_rules:
+            if rule.reason not in by_reason:
+                by_reason[rule.reason] = []
+            by_reason[rule.reason].append(rule)
+
+        reason_labels = {
+            'no_mapping': ('No Test Mapping', 'Rules converted to Splunk but no Atomic Red Team test is mapped'),
+            'skipped_non_windows': ('Non-Windows (Skipped)', 'Linux, M365, or other non-Windows rules not converted'),
+            'conversion_failed': ('Conversion Failed', 'Rules that failed to convert to Splunk format'),
+            'test_error': ('Test Error', 'Rules mapped to tests that encountered errors during execution'),
+            'excluded': ('Excluded', 'Rules explicitly excluded from testing')
+        }
+
+        html += '''
+        <h2 style="margin-top: 40px; color: #333;">Untested Rules</h2>
+        <p style="color: #666; margin-bottom: 20px;">Rules that were not validated during this test run, grouped by reason.</p>
+'''
+
+        for reason, rules_list in by_reason.items():
+            label, description = reason_labels.get(reason, (reason, ''))
+            count = len(rules_list)
+
+            # Determine color based on reason
+            color_map = {
+                'no_mapping': '#f59e0b',      # amber
+                'skipped_non_windows': '#6b7280',  # gray
+                'conversion_failed': '#ef4444',   # red
+                'test_error': '#ef4444',          # red
+                'excluded': '#6b7280'             # gray
+            }
+            color = color_map.get(reason, '#6b7280')
+
+            html += f'''
+        <div style="margin-bottom: 30px;">
+            <h3 style="color: {color}; margin-bottom: 5px;">{label} ({count})</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 10px;">{description}</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rule Name</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+'''
+            for rule in rules_list:
+                details = rule.details or '-'
+                html += f'''                    <tr>
+                        <td>{rule.rule_name}</td>
+                        <td style="font-size: 12px; color: #666;">{details}</td>
+                    </tr>
+'''
+            html += '''                </tbody>
+            </table>
+        </div>
+'''
+
+    html += '''    </div>
 
     <script>
         function filterTests(status) {
@@ -569,10 +749,17 @@ def generate_html_report(results: List[TestResult], report: dict, output_path: s
 
 
 def generate_report(results: List[TestResult], output_path: str,
-                    splunk_host: str = None, splunk_web_port: int = 8000, splunk_app: str = "search"):
+                    splunk_host: str = None, splunk_web_port: int = 8000, splunk_app: str = "search",
+                    untested_rules: List[UntestedRule] = None):
     """Generate JSON and HTML test reports."""
     passed = sum(1 for r in results if r.passed)
     failed = len(results) - passed
+
+    # Count untested rules by reason
+    untested_by_reason = {}
+    if untested_rules:
+        for rule in untested_rules:
+            untested_by_reason[rule.reason] = untested_by_reason.get(rule.reason, 0) + 1
 
     report = {
         "timestamp": datetime.now().isoformat(),
@@ -580,7 +767,9 @@ def generate_report(results: List[TestResult], output_path: str,
             "total_tests": len(results),
             "passed": passed,
             "failed": failed,
-            "pass_rate": f"{(passed/len(results)*100):.1f}%" if results else "N/A"
+            "pass_rate": f"{(passed/len(results)*100):.1f}%" if results else "N/A",
+            "untested_rules_count": len(untested_rules) if untested_rules else 0,
+            "untested_by_reason": untested_by_reason
         },
         "results": []
     }
@@ -598,13 +787,23 @@ def generate_report(results: List[TestResult], output_path: str,
             "error": r.error
         })
 
+    # Add untested rules to report
+    if untested_rules:
+        report["untested_rules"] = []
+        for rule in untested_rules:
+            report["untested_rules"].append({
+                "rule_name": rule.rule_name,
+                "reason": rule.reason,
+                "details": rule.details
+            })
+
     # Write JSON report
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2)
 
     # Write HTML report
     html_path = output_path.replace('.json', '.html')
-    generate_html_report(results, report, html_path, splunk_host, splunk_web_port, splunk_app)
+    generate_html_report(results, report, html_path, splunk_host, splunk_web_port, splunk_app, untested_rules)
 
     # Print summary
     print("\n" + "="*60)
@@ -624,6 +823,21 @@ def generate_report(results: List[TestResult], output_path: str,
                     print(f"    Missing: {', '.join(r.missing_rules)}")
                 if r.error:
                     print(f"    Error: {r.error}")
+
+    # Print untested rules summary
+    if untested_rules:
+        print(f"\nUntested Rules: {len(untested_rules)}")
+        by_reason = {}
+        for rule in untested_rules:
+            by_reason[rule.reason] = by_reason.get(rule.reason, 0) + 1
+        for reason, count in sorted(by_reason.items()):
+            reason_label = {
+                'no_mapping': 'No test mapping',
+                'skipped_non_windows': 'Non-Windows (skipped)',
+                'conversion_failed': 'Conversion failed',
+                'test_error': 'Test error'
+            }.get(reason, reason)
+            print(f"  - {reason_label}: {count}")
 
     print(f"\nReports saved to:")
     print(f"  - {output_path}")
@@ -773,6 +987,12 @@ def main():
     parser.add_argument('--prompt-inputs', action='store_true', help='Prompt for input arguments interactively')
     parser.add_argument('--inputs-file', help='YAML file with input arguments (overrides test config inputs)')
     parser.add_argument('--use-defaults', action='store_true', help='Use ART default values, ignore custom inputs')
+    parser.add_argument('--conversion-report', default='splunk_output/conversion_report.json',
+                        help='Path to Sigma conversion report JSON (for untested rules tracking)')
+    parser.add_argument('--savedsearches', default='splunk_output/savedsearches.conf',
+                        help='Path to Splunk savedsearches.conf (for untested rules tracking)')
+    parser.add_argument('--skip-untested-report', action='store_true',
+                        help='Skip generating the untested rules section in reports')
 
     # Enable tab completion if argcomplete is installed
     if HAS_ARGCOMPLETE:
@@ -997,8 +1217,15 @@ def main():
             result = run_test(test, splunk, runner, args.wait_time)
             results.append(result)
 
+    # Collect untested rules information
+    untested_rules = None
+    if not args.skip_untested_report:
+        all_rules = load_all_rules(args.conversion_report, args.savedsearches)
+        tested_rules = get_tested_rules(tests)
+        untested_rules = categorize_untested_rules(all_rules, tested_rules, results)
+
     # Generate report
-    generate_report(results, args.output, args.splunk_host, args.splunk_web_port, args.splunk_app)
+    generate_report(results, args.output, args.splunk_host, args.splunk_web_port, args.splunk_app, untested_rules)
 
     return 0 if all(r.passed for r in results) else 1
 
