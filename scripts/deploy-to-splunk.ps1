@@ -161,7 +161,7 @@ function Test-SavedSearchExists {
         [string]$SearchName
     )
 
-    $encodedName = [System.Web.HttpUtility]::UrlEncode($SearchName)
+    $encodedName = [uri]::EscapeDataString($SearchName)
     $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches/${encodedName}"
 
     $headers = @{
@@ -235,7 +235,7 @@ function Deploy-SavedSearch {
 
     if ($exists) {
         # Update existing search
-        $encodedName = [System.Web.HttpUtility]::UrlEncode($searchName)
+        $encodedName = [uri]::EscapeDataString($searchName)
         $uri = "https://${Server}:${Port}/servicesNS/nobody/${App}/saved/searches/${encodedName}"
         $body.Remove('name')  # Can't update name
 
