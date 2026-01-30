@@ -1,6 +1,14 @@
-# SCYTHE Sigma Detection Rules
+# Sigma Regression Testing
 
-A detection engineering pipeline for developing, validating, deploying, and testing Sigma rules. This project includes a curated collection of detection rules for Windows, Linux, and Microsoft 365 environments, along with automated tooling to convert rules to Splunk format, deploy them via REST API, and validate detections using Atomic Red Team tests.
+A detection engineering pipeline for developing, validating, deploying, and **regression testing** Sigma rules. This project includes a curated collection of detection rules for Windows, Linux, and Microsoft 365 environments, along with automated tooling to convert rules to Splunk format, deploy them via REST API, and validate detections using Atomic Red Team tests.
+
+## Getting Started
+
+```bash
+git clone https://github.com/scythe-io/sigma-regression-testing.git
+cd sigma-regression-testing
+pip install -r requirements.txt
+```
 
 > **New here?** See [OVERVIEW.md](OVERVIEW.md) for a plain-English explanation of the project, pipeline flowcharts, and testing status.
 
