@@ -1,6 +1,6 @@
 # Project Overview
 
-This document explains the Sigma detection rules project in layman's terms, including what it does, how the pipelines work, and what has been tested.
+This document explains the Sigma Regression Testing project in layman's terms, including what it does, how the pipelines work, and what has been tested.
 
 ## What This Project Is
 
@@ -287,6 +287,9 @@ The `regression-test.py` script supports two modes:
 | `--prompt-inputs` | Interactively prompt for input arguments |
 | `--inputs-file` | Load input arguments from YAML file |
 | `--use-defaults` | Ignore custom inputs, use ART default values |
+| `--conversion-report` | Path to Sigma conversion report (for untested rules tracking) |
+| `--savedsearches` | Path to Splunk savedsearches.conf (for untested rules tracking) |
+| `--skip-untested-report` | Skip generating the untested rules section |
 
 ### Test Output
 
@@ -299,10 +302,15 @@ The script generates two output files:
 - Execution time and lookback window
 
 **`test_results.html`** - Interactive HTML report with:
-- Summary cards (total tests, passed, failed, pass rate)
+- Summary cards (total tests, passed, failed, pass rate, untested rules count)
 - Visual progress bar showing pass/fail ratio
 - Filterable table (filter by status or search text)
 - Detailed view of expected, triggered, and missing rules for each test
 - **Clickable Splunk links** - Each expected rule is a hyperlink that opens the saved search directly in Splunk with a 15-minute time range
+- **Untested Rules Section** - Shows which rules were not covered by any test:
+  - No test mapping (rule exists but no Atomic test mapped)
+  - Non-Windows/skipped (Linux, M365, or other non-Windows rules)
+  - Conversion failed (rules that failed Splunk conversion)
+  - Test error (tests that encountered errors during execution)
 
 Open `test_results.html` in any browser to review results interactively.
