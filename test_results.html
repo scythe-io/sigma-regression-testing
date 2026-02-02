@@ -18,6 +18,7 @@
         .card.failed .value { color: #ef4444; }
         .card.total .value { color: #3b82f6; }
         .card.rate .value { color: #8b5cf6; }
+        .card.untested .value { color: #f59e0b; }
         .progress-bar { background: #e5e7eb; height: 24px; border-radius: 12px; overflow: hidden; margin-bottom: 30px; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #16a34a); width: 100.0%; transition: width 0.3s; }
         .filters { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
@@ -42,13 +43,14 @@
 <body>
     <div class="container">
         <h1>Sigma Regression Test Results</h1>
-        <p class="timestamp">Generated: 2026-01-28T13:22:43.457089</p>
+        <p class="timestamp">Generated: 2026-01-30T16:42:00.927057</p>
 
         <div class="summary">
-            <div class="card total"><h3>Total Tests</h3><div class="value">3</div></div>
-            <div class="card passed"><h3>Passed</h3><div class="value">3</div></div>
+            <div class="card total"><h3>Total Tests</h3><div class="value">1</div></div>
+            <div class="card passed"><h3>Passed</h3><div class="value">1</div></div>
             <div class="card failed"><h3>Failed</h3><div class="value">0</div></div>
             <div class="card rate"><h3>Pass Rate</h3><div class="value">100.0%</div></div>
+            <div class="card untested"><h3>Untested Rules</h3><div class="value">74</div></div>
         </div>
 
         <div class="progress-bar"><div class="progress-fill"></div></div>
@@ -78,22 +80,337 @@
                     <td class="rules"><a href="https://splunk.example.com:8000/en-US/app/search/search?s=%2FservicesNS%2Fnobody%2Fsearch%2Fsaved%2Fsearches%2FDomain%20Discovery%20via%20NET%20Command&earliest=-15m&latest=now" target="_blank" title="Run in Splunk (last 15 min)">Domain Discovery via NET Command</a></td>
                     <td class="rules"><span class="triggered">Triggered: Domain Discovery via NET Command</span></td>
                 </tr>
-                <tr data-status="pass">
-                    <td><span class="status pass">PASS</span></td>
-                    <td><a href="https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1087.001/T1087.001.md" target="_blank" title="View Atomic Test: 80887bec-5a9b-4efc-a81d-f83eb2eb32ab">Local Account Discovery (net user)</a></td>
-                    <td>T1087.001</td>
-                    <td class="rules"><a href="https://splunk.example.com:8000/en-US/app/search/search?s=%2FservicesNS%2Fnobody%2Fsearch%2Fsaved%2Fsearches%2FDomain%20Discovery%20via%20NET%20Command&earliest=-15m&latest=now" target="_blank" title="Run in Splunk (last 15 min)">Domain Discovery via NET Command</a>, <a href="https://splunk.example.com:8000/en-US/app/search/search?s=%2FservicesNS%2Fnobody%2Fsearch%2Fsaved%2Fsearches%2FConti%20Ransomware%20Discovery%20Commands&earliest=-15m&latest=now" target="_blank" title="Run in Splunk (last 15 min)">Conti Ransomware Discovery Commands</a></td>
-                    <td class="rules"><span class="triggered">Triggered: Domain Discovery via NET Command, Conti Ransomware Discovery Commands</span></td>
-                </tr>
-                <tr data-status="pass">
-                    <td><span class="status pass">PASS</span></td>
-                    <td><a href="https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1069.001/T1069.001.md" target="_blank" title="View Atomic Test: 1f454dd6-e134-44df-bebb-67de70fb6cd8">Local Admin Group Enumeration</a></td>
-                    <td>T1069.001</td>
-                    <td class="rules"><a href="https://splunk.example.com:8000/en-US/app/search/search?s=%2FservicesNS%2Fnobody%2Fsearch%2Fsaved%2Fsearches%2FDomain%20Discovery%20via%20NET%20Command&earliest=-15m&latest=now" target="_blank" title="Run in Splunk (last 15 min)">Domain Discovery via NET Command</a></td>
-                    <td class="rules"><span class="triggered">Triggered: Domain Discovery via NET Command</span></td>
-                </tr>
             </tbody>
         </table>
+
+        <h2 style="margin-top: 40px; color: #333;">Untested Rules</h2>
+        <p style="color: #666; margin-bottom: 20px;">Rules that were not validated during this test run, grouped by reason.</p>
+
+        <div style="margin-bottom: 30px;">
+            <h3 style="color: #f59e0b; margin-bottom: 5px;">No Test Mapping (54)</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 10px;">Rules converted to Splunk but no Atomic Red Team test is mapped</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rule Name</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>File Permission Modification via Icacls Denying Everyone Access</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>MedusaLocker Ransomware Scheduled Task Persistence</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Azure CLI Discovery Commands</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Possible File Exfiltration from Non-Standard Directory Over HTTPS</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>LockBit 3.0 Ransomware Deletion Commands</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Process Execution from Windows SxS Directory</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>PowerShell File Masquerading Activity</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Kimsuky Keylogger Process Execution</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>ALPHV BlackCat Symlink Evaluation Enabled via Fsutil</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>ALPHV BlackCat VM and Shadow Copy Deletion Commands</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Salt Typhoon Campaign Process Execution Patterns</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>LockBit 3.0 Ransomware File Extension Creation</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Kimsuky Keylogger Desktops.ini File Creation</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Conti Ransomware Discovery Commands</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Rundll32 Execution with Suspicious Context</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Medusa Ransomware Registry Modifications</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>LockBit 3.0 Ransomware Registry Modifications</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Salt Typhoon Malicious WdiSystem Service Indicators</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Add-MailboxPermission PowerShell Cmdlet Execution</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Multiple LOLBAS Discovery Commands in Short Timeframe</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Suspicious CMD/POSH ParentImage</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Local User Account Creation via New-LocalUser PowerShell Cmdlet</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Suspicious Process Creation Location</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Chrome Electron Proxy Execution via Command Line</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>PPLBlade LSASS Protection Bypass Tool Execution</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Notepad++ Spawns Command Shell Process</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Windows Event Log Manipulation via PowerShell</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Process Execution from Windows Defender NisSrv Directory</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Windows Script Host Spawns Notepad++</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>ALPHV BlackCat VM and Shadow Copy Deletion Commands</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Registry Values set via CMD or PoSH</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Remote Access Software Execution from Non-Standard Directory</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Conti Ransomware Discovery Commands</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>MedusaLocker Ransomware Registry Persistence</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Remote Access Software Execution from Non-Standard Directory - Sysmon</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>ALPHV BlackCat Symlink Evaluation Policy Modification</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>PPLBlade LSASS Bypass Tool Execution</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Microsoft 365 Mailbox Permission Delegation via PowerShell</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Suspicious Run Key Creation</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Registry Run Key Modification</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Scheduled Task Creation</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Executable File Creation in User Temp Directories</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Discovery Commands Spawned from Non-Shell Parent Process</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>StopCrypt Ransomware Command Line Parameters</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Remote Access Software Execution from Non-Standard Directory</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Suspicious Scheduled Task Creation via Command Line</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>LockBit 3.0 Shadow Copy and Event Log Deletion</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>LockBit 3.0 Ransomware Registry Modifications</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Service Creation</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Command Shell Spawned from PDF Viewer Application</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Azure VM Run-Command Execution</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Suspicious Archive Creation</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>LockBit 3.0 Ransomware File Extension Detection</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                    <tr>
+                        <td>Network Connection to LockBit 3.0 Associated File Sharing Sites</td>
+                        <td style="font-size: 12px; color: #666;">No Atomic Red Team test mapped to this rule</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+            <h3 style="color: #6b7280; margin-bottom: 5px;">Non-Windows (Skipped) (20)</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 10px;">Linux, M365, or other non-Windows rules not converted</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rule Name</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>File Event Lnx Authorized Keys</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: file_event_lnx_authorized_keys.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>M365 Sharepoint File Upload</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: m365_sharepoint_file_upload.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>File Creation Lnx Bin Dir</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: file_creation_lnx_bin_dir.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Proc Creation Lnx Cmd Ingress Transfer</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: proc_creation_lnx_cmd_ingress_transfer.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Proc Creation Lnx Docker Load</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: proc_creation_lnx_docker_load.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>File Event Lnx Systemd Creation</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: file_event_lnx_systemd_creation.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Proc Creation Lnx Useradd Admin</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: proc_creation_lnx_useradd_admin.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Proc Creation Lnx Cmdline Download Dns</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: proc_creation_lnx_cmdline_download_dns.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Proc Creation Lnx Discovery Cmd</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: proc_creation_lnx_discovery_cmd.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Proc Creation Lnx Chmod Executable</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: proc_creation_lnx_chmod_executable.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>M365 User Creation</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: m365_user_creation.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Web Sharepoint Toolpane Exploit</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: web_sharepoint_toolpane_exploit.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Net Connection Lnx Cmd Ingress Transfer</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: net_connection_lnx_cmd_ingress_transfer.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Proc Creation Lnx Systemctl Enable</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: proc_creation_lnx_systemctl_enable.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>M365 Mailbox Perm Delegation</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: m365_mailbox_perm_delegation.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>M365 Sharepoint File Deletion</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: m365_sharepoint_file_deletion.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>M365 Powershell Exec</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: m365_powershell_exec.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Web Sharepoint Toolpane Enumeration</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: web_sharepoint_toolpane_enumeration.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Proc Creation Lnx Logrotate</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: proc_creation_lnx_logrotate.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                    <tr>
+                        <td>Proc Creation Lnx Docker Priv Cmdline</td>
+                        <td style="font-size: 12px; color: #666;">Rule file: proc_creation_lnx_docker_priv_cmdline.yml (Linux/M365/non-Windows)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
