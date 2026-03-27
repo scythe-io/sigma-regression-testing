@@ -95,6 +95,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add splunk_output/savedsearches.conf splunk_output/conversion_report.json
           git diff --staged --quiet || git commit -m "chore: update Splunk savedsearches.conf from Sigma rules"
+          git pull --rebase origin main
           git push
 
   deploy:

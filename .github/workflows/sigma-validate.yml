@@ -126,4 +126,5 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add README.md
           git commit -m "docs: update README statistics"
+          git pull --rebase origin main
           git push
