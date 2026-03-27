@@ -16,8 +16,8 @@ pip install -r requirements.txt
 
 | Metric | Count |
 |--------|-------|
-| **Total Rules** | 134 |
-| **Windows Rules** | 89 |
+| **Total Rules** | 141 |
+| **Windows Rules** | 95 |
 | **Linux Rules** | 17 |
 | **M365/Cloud Rules** | 8 |
 
@@ -25,7 +25,7 @@ pip install -r requirements.txt
 
 | Category | Description | Count |
 |----------|-------------|-------|
-| `proc_creation` | Process creation events | 86 |
+| `proc_creation` | Process creation events | 92 |
 | `file_event` | File system activity | 11 |
 | `m365_*` | Microsoft 365 audit logs | 5 |
 | `net_connection` | Network connections | 4 |
@@ -39,6 +39,7 @@ pip install -r requirements.txt
 | `azure_firewall` | Other events | 1 |
 | `sysmon_medusa` | Other events | 1 |
 | `azure_application` | Other events | 1 |
+| `wmi_event` | Other events | 1 |
 | `sysmon_RAS` | Other events | 1 |
 | `file_creation` | File creation events | 1 |
 | `bitsadmin_mal` | Other events | 1 |
