@@ -9,7 +9,7 @@ references:
 author: Micah Babinski
 date: 2022/11/03
 tags:
-    - attack.command_and_control
+    - attack.command-and-control
     - attack.t1105
 logsource:
     category: proc_creation

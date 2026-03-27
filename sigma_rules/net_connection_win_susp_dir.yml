@@ -9,7 +9,7 @@ references:
 tags:
   - attack.exfiltration
   - attack.t1041
-  - attack.command_and_control
+  - attack.command-and-control
 logsource:
   product: windows
   category: network_connection

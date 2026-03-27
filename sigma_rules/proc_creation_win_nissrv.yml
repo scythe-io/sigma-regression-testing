@@ -7,8 +7,7 @@ references:
 author: Tyler Casey @1qazCasey, @scythe_io
 date: 2024/04/22
 tags:
-    - attack.defense_evasion
-    - attack.t1574.002
+    - attack.defense-evasion
     - attack.execution
     - attack.t1059.001
 logsource:

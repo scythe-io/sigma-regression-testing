@@ -7,7 +7,7 @@ references:
 author: Tyler Casey @1qazCasey, @scythe_io
 date: 2024/04/04
 tags:
-    - attack.defense_evasion
+    - attack.defense-evasion
     - attack.t1222.001
 logsource:
     product: windows

@@ -159,20 +159,20 @@ sigma check sigma_rules/*.yml
 
 **Expected output (success):**
 ```
-Checking 128 rules...
+Checking 125 rules...
 
-No issues found in 128 rules.
+No issues found in 125 rules.
 ```
 
 **Expected output (with errors):**
 ```
-Checking 128 rules...
+Checking 125 rules...
 
 sigma_rules/proc_creation_win_bad_rule.yml:
   - error: Missing required field 'logsource'
   - warning: No 'falsepositives' field defined
 
-1 rule with errors, 127 rules OK
+1 rule with errors, 124 rules OK
 ```
 
 ### Step 2: Convert Rules to Splunk Format
@@ -186,12 +186,12 @@ python scripts/convert-to-splunk.py --list-compatible
 
 **Expected output:**
 ```
-Compatible Windows rules found: ~80
+Compatible Windows rules found: ~97
 
 Rules that will be converted:
-  1. proc_creation_win_conti_discovery.yml
-  2. proc_creation_win_domain_enumeration.yml
-  3. proc_creation_win_encoded_ps_execution.yml
+  1. proc_creation_win_conti_ransomware.yml
+  2. proc_creation_win_net_discovery.yml
+  3. proc_creation_win_susp_cmd_discovery.yml
   ...
 
 Run without --list-compatible to perform conversion.
@@ -208,19 +208,19 @@ Sigma to Splunk Converter
 =========================
 
 Processing Windows rules from sigma_rules...
-  ✓ proc_creation_win_conti_discovery.yml
-  ✓ proc_creation_win_domain_enumeration.yml
-  ✓ proc_creation_win_encoded_ps_execution.yml
+  ✓ proc_creation_win_conti_ransomware.yml
+  ✓ proc_creation_win_net_discovery.yml
+  ✓ proc_creation_win_susp_cmd_discovery.yml
   ...
 
 Conversion Summary
 ==================
-Total rules processed: ~80
-Successfully converted: ~80
+Total rules processed: ~97
+Successfully converted: ~97
 Failed conversions: 0
 
 Output files:
-  - splunk_output/savedsearches.conf (~80 searches)
+  - splunk_output/savedsearches.conf (~97 searches)
   - splunk_output/conversion_report.json
 ```
 
@@ -259,7 +259,7 @@ Splunk Saved Search Deployment
 ============================================================
 
 Parsing splunk_output/savedsearches.conf...
-Found 55 saved searches
+Found 97 saved searches
 
 [DRY RUN] Would deploy the following searches:
   - Conti Ransomware Discovery Commands
@@ -287,7 +287,7 @@ Splunk Saved Search Deployment
 ============================================================
 
 Parsing splunk_output/savedsearches.conf...
-Found 55 saved searches
+Found 97 saved searches
 
 Authenticating with Splunk at splunk.yourcompany.com:8089...
 Authentication successful
@@ -303,7 +303,7 @@ Deploying: Windows Event Log Manipulation via PowerShell... CREATED
 ============================================================
 Deployment Summary
 ============================================================
-Created: 55
+Created: 97
 Updated: 0
 Failed:  0
 
@@ -321,7 +321,7 @@ Deploying: Domain Discovery via NET Command... UPDATED
 Deployment Summary
 ============================================================
 Created: 0
-Updated: 55
+Updated: 97
 Failed:  0
 ```
 

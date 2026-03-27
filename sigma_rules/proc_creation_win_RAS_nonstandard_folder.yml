@@ -11,7 +11,7 @@ references:
 author: Tyler Casey @1qazCasey, @scythe_io
 date: 2024/01/31
 tags:
-    - attack.command_and_control
+    - attack.command-and-control
     - attack.t1219
     - attack.persistence
     - attack.t1133

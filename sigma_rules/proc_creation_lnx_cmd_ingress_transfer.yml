@@ -9,7 +9,7 @@ references:
 author: Tyler Casey @1qazCasey, @scythe_io
 date: 2024/06/28
 tags:
-    - attack.command_and_control
+    - attack.command-and-control
     - attack.t1105
 logsource:
     category: process_creation
