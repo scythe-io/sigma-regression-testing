@@ -1,14 +1,12 @@
 name: Splunk Detection Pipeline
 
 on:
-  push:
+  # Automatically trigger only after Sigma Rules Validation succeeds on main
+  workflow_run:
+    workflows: ["Sigma Rules Validation"]
+    types: [completed]
     branches: [main]
-    paths:
-      - 'sigma_rules/**'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'sigma_rules/**'
+  # Allow manual runs with optional deploy/regression flags
   workflow_dispatch:
     inputs:
       deploy:
@@ -29,12 +27,19 @@ jobs:
   convert:
     name: Convert Sigma to Splunk
     runs-on: ubuntu-latest
+    # When triggered by workflow_run, only proceed if validation passed
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     permissions:
       contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # For workflow_run triggers, check out the commit that was validated
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -44,11 +49,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install sigma-cli pysigma pysigma-backend-splunk pysigma-pipeline-windows PyYAML
-
-      - name: Validate Sigma rules
-        run: |
-          echo "=== Validating Sigma Rules ==="
-          sigma check sigma_rules/*.yml
 
       - name: Convert to Splunk format
         run: |
@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: convert
     if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_run' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true')
 
     environment: splunk-production
