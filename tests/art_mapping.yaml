@@ -422,3 +422,113 @@ tests:
     atomic_test_guid: "d6042746-07d4-4c92-9ad8-e644c114a231"
     expected_rules:
       - "Potential Persistence Via Logon Scripts - Registry"
+
+  # ============================================
+  # Priority 1 ATT&CK Gap Coverage
+  # ============================================
+
+  # ---- T1550.002: Pass-the-Hash via Mimikatz ----
+
+  - name: "Mimikatz Pass-the-Hash Attack"
+    description: "Executes Mimikatz sekurlsa::pth to inject an NTLM hash into a new process token, enabling lateral movement without knowing the plaintext password"
+    technique_id: "T1550.002"
+    atomic_test_guid: "ec23cef9-27d9-46e4-a68d-6f75f7b86908"
+    expected_rules:
+      - "HackTool - Mimikatz Pass-the-Hash Execution"
+
+  # ---- T1047: WMI Local Process Execution ----
+
+  - name: "WMI Execute Local Process via WMIC"
+    description: "Uses wmic process call create to execute a process locally via WMI, a common living-off-the-land execution technique"
+    technique_id: "T1047"
+    atomic_test_guid: "b3bdfc91-b33e-4c6d-a5c8-d64bee0276b3"
+    expected_rules:
+      - "WMI Process Execution via WMIC Process Call Create"
+
+  # ---- T1047: WMI Remote Process Execution ----
+
+  - name: "WMI Execute Remote Process via WMIC"
+    description: "Uses wmic /node: to execute a process on a remote system, demonstrating WMI-based lateral movement"
+    technique_id: "T1047"
+    atomic_test_guid: "9c8ef159-c666-472f-9874-90c8d60d136b"
+    expected_rules:
+      - "WMI Remote Process Execution via WMIC Node Parameter"
+
+  # ---- T1134.001: Access Token Manipulation - Named Pipe Impersonation ----
+
+  - name: "Token Manipulation via Named Pipe Impersonation (Get-System)"
+    description: "Uses Empire Get-System with NamedPipe technique to impersonate a SYSTEM token via named pipe client impersonation"
+    technique_id: "T1134.001"
+    atomic_test_guid: "90db9e27-8e7c-4c04-b602-a45927884966"
+    expected_rules:
+      - "Access Token Manipulation via Get-System PowerShell"
+
+  # ---- T1134.001: Access Token Manipulation - SeDebugPrivilege Token Duplication ----
+
+  - name: "Token Manipulation via SeDebugPrivilege Token Duplication (Get-System)"
+    description: "Uses Empire Get-System with Token technique to duplicate a SYSTEM token via SeDebugPrivilege token duplication"
+    technique_id: "T1134.001"
+    atomic_test_guid: "34f0a430-9d04-4d98-bcb5-1989f14719f0"
+    expected_rules:
+      - "Access Token Manipulation via Get-System PowerShell"
+
+  # ---- T1558.003: Kerberoasting via Rubeus ----
+
+  - name: "Rubeus Kerberoasting Attack"
+    description: "Executes Rubeus kerberoast to request Kerberos service tickets for accounts with SPNs, writing hashes to a file for offline cracking"
+    technique_id: "T1558.003"
+    atomic_test_guid: "14625569-6def-4497-99ac-8e7817105b55"
+    expected_rules:
+      - "HackTool - Rubeus Kerberoasting and AS-REP Roasting"
+
+  # ---- T1558.003: Kerberoasting - SPN Enumeration via setspn ----
+
+  - name: "Kerberoasting SPN Enumeration via Setspn"
+    description: "Uses setspn -Q */* to enumerate all Service Principal Names across the domain as preparation for Kerberoasting"
+    technique_id: "T1558.003"
+    atomic_test_guid: "e6f4affd-d826-4871-9a62-6c9004b8fe06"
+    expected_rules:
+      - "Kerberoasting SPN Enumeration via Setspn"
+
+  # ---- T1558.003: Kerberoasting - Invoke-Kerberoast ----
+
+  - name: "Kerberoasting via Invoke-Kerberoast PowerShell Module"
+    description: "Downloads and executes Invoke-Kerberoast from Empire to request service tickets and extract hashes for offline cracking"
+    technique_id: "T1558.003"
+    atomic_test_guid: "3f987809-3681-43c8-bcd8-b3ff3a28533a"
+    expected_rules:
+      - "Kerberoasting via Invoke-Kerberoast PowerShell"
+
+  # ---- T1558.004: AS-REP Roasting via Rubeus ----
+
+  - name: "Rubeus AS-REP Roasting Attack"
+    description: "Executes Rubeus asreproast to request AS-REP hashes for accounts that do not require Kerberos pre-authentication"
+    technique_id: "T1558.004"
+    atomic_test_guid: "615bd568-2859-41b5-9aed-61f6a88e48dd"
+    expected_rules:
+      - "HackTool - Rubeus Kerberoasting and AS-REP Roasting"
+
+  # ---- T1003.006: DCSync via Mimikatz ----
+
+  - name: "DCSync Domain Credential Replication via Mimikatz"
+    description: "Executes Mimikatz lsadump::dcsync to replicate domain credential hashes from Active Directory using MS-DRSR protocol without running code on the DC"
+    technique_id: "T1003.006"
+    atomic_test_guid: "129efd28-8497-4c87-a1b0-73b9a870ca3e"
+    expected_rules:
+      - "HackTool - Mimikatz DCSync Domain Credential Replication"
+
+  # ---- T1204.002: Malicious Document - Office Spawning Suspicious Child Process ----
+
+  - name: "OSTap Macro Execution via Word VBA (cscript child)"
+    description: "Executes a Word VBA macro that creates a .jse file and launches cscript.exe as a child process of WINWORD.EXE, simulating malicious document execution"
+    technique_id: "T1204.002"
+    atomic_test_guid: "8bebc690-18c7-4549-bc98-210f7019efff"
+    expected_rules:
+      - "Suspicious Office Application Child Process - Malicious Document Execution"
+
+  - name: "Maldoc Choice Flags - cmd.exe spawned from Word VBA"
+    description: "Executes a Word VBA macro that spawns cmd.exe as a child process of WINWORD.EXE to run choice.exe with flags"
+    technique_id: "T1204.002"
+    atomic_test_guid: "0330a5d2-a45a-4272-a9ee-e364411c4b18"
+    expected_rules:
+      - "Suspicious Office Application Child Process - Malicious Document Execution"

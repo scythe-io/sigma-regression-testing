@@ -1,0 +1,32 @@
+title: Kerberoasting SPN Enumeration via Setspn
+id: 1b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e
+status: test
+description: Detects use of setspn.exe to enumerate all Service Principal Names across the domain, which is a preparatory step for Kerberoasting attacks to identify service accounts with SPNs.
+references:
+    - https://attack.mitre.org/techniques/T1558/003/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1558.003/T1558.003.yaml
+    - https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/cc731241(v=ws.11)
+author: Sigma Community
+date: 2024-01-15
+modified: 2024-01-15
+tags:
+    - attack.credential-access
+    - attack.t1558.003
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_setspn:
+        - Image|endswith: '\setspn.exe'
+        - OriginalFileName: 'setspn.exe'
+    selection_enum:
+        CommandLine|contains:
+            - ' -Q */*'
+            - ' -q */*'
+            - ' /Q */*'
+            - ' /q */*'
+    condition: selection_setspn and selection_enum
+falsepositives:
+    - Legitimate AD administrators enumerating SPNs for troubleshooting
+    - Monitoring scripts checking for duplicate SPNs
+level: medium

@@ -8,8 +8,8 @@ This is a collection of **detection rules** that help security teams find hacker
 
 The rules are written in **Sigma**, which is like a universal language for detection rules. The advantage is that you write the rule once, and it can be translated to work with whatever security tool your company uses - Splunk, Elastic, Microsoft Sentinel, etc.
 
-Currently there are **125 rules** covering:
-- **Windows** (80 rules) - detecting suspicious processes, registry changes, file activity, network connections, DNS queries, and credential access
+Currently there are **134 rules** covering:
+- **Windows** (89 rules) - detecting suspicious processes, registry changes, file activity, network connections, DNS queries, credential access, lateral movement, and Kerberos attacks
 - **Linux** (17 rules) - detecting privilege escalation, backdoors, reconnaissance
 - **Microsoft 365/Cloud** (8 rules) - detecting mailbox tampering, suspicious SharePoint activity
 - **Azure** (4 rules) - detecting cloud resource modifications and firewall changes
@@ -48,23 +48,35 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 
 | Step | Status | What We Did |
 |------|--------|-------------|
-| **Rule Upload** | Tested | 125 Sigma rules across Windows, Linux, M365, and Azure |
+| **Rule Upload** | Tested | 134 Sigma rules across Windows, Linux, M365, and Azure |
 | **Validation** | Tested | All rules pass `sigma check` - no syntax errors |
 | **Conversion** | Tested | Ran `convert-to-splunk.py` to generate `savedsearches.conf` for Windows-compatible rules |
 | **Auto-Commit** | Tested | Workflow automatically commits `savedsearches.conf` to repo on rule changes |
 | **Push to Splunk** | Tested | Deployed saved searches to Splunk using `deploy-to-splunk.ps1` |
-| **Regression Testing** | Tested | 40 Atomic Red Team test mappings across process, file, network, registry, and DNS event types |
+| **Regression Testing** | Tested | 52 Atomic Red Team test mappings across process, file, network, registry, and DNS event types |
 
 ### Atomic Red Team Coverage
 
 Rules are mapped to verified Atomic Red Team tests in `tests/art_mapping.yaml`. Each mapping was confirmed by checking the actual ART executor command against the Sigma detection logic — only tests that genuinely trigger the rule are included.
 
 Coverage spans multiple log source categories:
-- **Process creation** - LOLBin abuse, defense evasion, persistence, credential access
+- **Process creation** - LOLBin abuse, defense evasion, persistence, credential access, Pass-the-Hash, WMI execution, Kerberoasting, AS-REP Roasting, DCSync, token manipulation, malicious document execution
 - **Registry** - WDigest caching, Defender exclusions, UAC bypass, logon script persistence
 - **File events** - LSASS dump files, startup folder writes
 - **Network connections** - Regsvr32 and Rundll32 remote payload delivery
 - **DNS queries** - Regsvr32 COM scriptlet resolution
+
+### Priority 1 ATT&CK Coverage (added 2024-01-15)
+
+| Technique | Description | Rules |
+|-----------|-------------|-------|
+| T1550.002 | Pass-the-Hash | `proc_creation_win_hktl_mimikatz_pth.yml` |
+| T1047 | WMI Execution | `proc_creation_win_wmic_process_call_create.yml`, `proc_creation_win_wmic_remote_execution.yml` |
+| T1134.001 | Access Token Manipulation | `proc_creation_win_token_manipulation_getsystem.yml` |
+| T1558.003 | Kerberoasting | `proc_creation_win_hktl_rubeus_kerberoasting.yml`, `proc_creation_win_kerberoasting_setspn.yml`, `proc_creation_win_invoke_kerberoast.yml` |
+| T1558.004 | AS-REP Roasting | `proc_creation_win_hktl_rubeus_kerberoasting.yml` |
+| T1003.006 | DCSync | `proc_creation_win_hktl_mimikatz_dcsync.yml` |
+| T1204.002 | Malicious Document Execution | `proc_creation_win_office_susp_child_process.yml` |
 
 ### Earlier Regression Test Results
 

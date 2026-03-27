@@ -159,14 +159,14 @@ sigma check sigma_rules/*.yml
 
 **Expected output (success):**
 ```
-Checking 125 rules...
+Checking 134 rules...
 
-No issues found in 125 rules.
+No issues found in 134 rules.
 ```
 
 **Expected output (with errors):**
 ```
-Checking 125 rules...
+Checking 134 rules...
 
 sigma_rules/proc_creation_win_bad_rule.yml:
   - error: Missing required field 'logsource'
@@ -259,7 +259,7 @@ Splunk Saved Search Deployment
 ============================================================
 
 Parsing splunk_output/savedsearches.conf...
-Found 97 saved searches
+Found 106 saved searches
 
 [DRY RUN] Would deploy the following searches:
   - Conti Ransomware Discovery Commands
@@ -287,7 +287,7 @@ Splunk Saved Search Deployment
 ============================================================
 
 Parsing splunk_output/savedsearches.conf...
-Found 97 saved searches
+Found 106 saved searches
 
 Authenticating with Splunk at splunk.yourcompany.com:8089...
 Authentication successful

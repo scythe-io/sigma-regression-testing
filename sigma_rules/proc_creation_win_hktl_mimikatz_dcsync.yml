@@ -1,0 +1,30 @@
+title: HackTool - Mimikatz DCSync Domain Credential Replication
+id: 4e5f6a7b-8c9d-0e1f-2a3b-4c5d6e7f8a9b
+status: test
+description: Detects Mimikatz lsadump::dcsync command which abuses the MS-DRSR (Directory Replication Service Remote Protocol) to replicate domain credential hashes without running code on a DC. A critical indicator of domain compromise.
+references:
+    - https://attack.mitre.org/techniques/T1003/006/
+    - https://github.com/gentilkiwi/mimikatz/wiki/module-~-lsadump#dcsync
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1003.006/T1003.006.yaml
+author: Sigma Community
+date: 2024-01-15
+modified: 2024-01-15
+tags:
+    - attack.credential-access
+    - attack.t1003.006
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_mimikatz:
+        CommandLine|contains: 'mimikatz'
+    selection_dcsync:
+        CommandLine|contains: 'lsadump::dcsync'
+    selection_standalone:
+        CommandLine|contains|all:
+            - 'lsadump::dcsync'
+            - '/domain:'
+    condition: (selection_mimikatz and selection_dcsync) or selection_standalone
+falsepositives:
+    - Unlikely in production environments; penetration testers
+level: critical

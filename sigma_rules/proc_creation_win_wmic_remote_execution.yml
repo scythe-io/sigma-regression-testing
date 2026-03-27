@@ -1,0 +1,32 @@
+title: WMI Remote Process Execution via WMIC Node Parameter
+id: 2c9d4e5f-6a7b-8c9d-0e1f-2a3b4c5d6e7f
+status: test
+description: 'Detects WMIC execution targeting a remote system using the /node: parameter. Attackers use this for lateral movement and remote command execution without dropping additional tools.'
+references:
+    - https://attack.mitre.org/techniques/T1047/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1047/T1047.yaml
+author: Sigma Community
+date: 2024-01-15
+modified: 2024-01-15
+tags:
+    - attack.execution
+    - attack.lateral-movement
+    - attack.t1047
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_wmic:
+        - Image|endswith: '\wmic.exe'
+        - OriginalFileName: 'wmic.exe'
+    selection_remote:
+        CommandLine|contains: '/node:'
+    filter_localhost:
+        CommandLine|contains:
+            - '/node:localhost'
+            - '/node:127.0.0.1'
+    condition: selection_wmic and selection_remote and not filter_localhost
+falsepositives:
+    - Legitimate remote administration scripts using WMIC /node parameter
+    - SCCM or other software deployment systems
+level: medium

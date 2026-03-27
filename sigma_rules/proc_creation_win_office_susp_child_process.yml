@@ -1,0 +1,52 @@
+title: Suspicious Office Application Child Process - Malicious Document Execution
+id: 5f6a7b8c-9d0e-1f2a-3b4c-5d6e7f8a9b0c
+status: test
+description: Detects Office applications (Word, Excel, PowerPoint, Outlook) spawning suspicious child processes such as cmd.exe, powershell.exe, wscript.exe, cscript.exe, and mshta.exe. This is a strong indicator of malicious document (maldoc) execution.
+references:
+    - https://attack.mitre.org/techniques/T1204/002/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1204.002/T1204.002.yaml
+author: Sigma Community
+date: 2024-01-15
+modified: 2024-01-15
+tags:
+    - attack.execution
+    - attack.t1204.002
+    - attack.t1059.005
+    - attack.t1059.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_parent:
+        ParentImage|endswith:
+            - '\WINWORD.EXE'
+            - '\EXCEL.EXE'
+            - '\POWERPNT.EXE'
+            - '\MSPUB.EXE'
+            - '\VISIO.EXE'
+            - '\OUTLOOK.EXE'
+            - '\msaccess.exe'
+    selection_susp_child:
+        Image|endswith:
+            - '\cmd.exe'
+            - '\powershell.exe'
+            - '\pwsh.exe'
+            - '\wscript.exe'
+            - '\cscript.exe'
+            - '\mshta.exe'
+            - '\regsvr32.exe'
+            - '\rundll32.exe'
+            - '\msiexec.exe'
+            - '\wmic.exe'
+            - '\certutil.exe'
+            - '\bitsadmin.exe'
+            - '\msbuild.exe'
+            - '\installutil.exe'
+            - '\schtasks.exe'
+            - '\regasm.exe'
+            - '\regsvcs.exe'
+    condition: selection_parent and selection_susp_child
+falsepositives:
+    - Legitimate Office macros that invoke command-line tools for administrative tasks
+    - Automated Office testing frameworks
+level: high

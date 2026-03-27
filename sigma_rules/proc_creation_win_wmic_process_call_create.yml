@@ -1,0 +1,31 @@
+title: WMI Process Execution via WMIC Process Call Create
+id: 7f8b2c1a-4e9d-4f6a-8b7c-9d0e1f2a3b4c
+status: test
+description: Detects use of WMIC to execute processes locally or remotely via "process call create". This is a common living-off-the-land technique used for execution and lateral movement.
+references:
+    - https://attack.mitre.org/techniques/T1047/
+    - https://docs.microsoft.com/en-us/windows/win32/wmisdk/wmic
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1047/T1047.yaml
+author: Sigma Community
+date: 2024-01-15
+modified: 2024-01-15
+tags:
+    - attack.execution
+    - attack.t1047
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_wmic:
+        - Image|endswith: '\wmic.exe'
+        - OriginalFileName: 'wmic.exe'
+    selection_create:
+        CommandLine|contains|all:
+            - 'process'
+            - 'call'
+            - 'create'
+    condition: selection_wmic and selection_create
+falsepositives:
+    - Legitimate administrative scripts using WMIC for process management
+    - Software deployment tools that use WMIC
+level: high

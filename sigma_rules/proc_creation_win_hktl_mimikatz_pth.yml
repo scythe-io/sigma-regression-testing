@@ -1,0 +1,35 @@
+title: HackTool - Mimikatz Pass-the-Hash Execution
+id: 3a4d2eaf-6d5e-4b8c-9f01-234567890abc
+status: test
+description: Detects Mimikatz sekurlsa::pth command used to perform Pass-the-Hash lateral movement by injecting an NTLM hash into a new process token.
+references:
+    - https://attack.mitre.org/techniques/T1550/002/
+    - https://github.com/gentilkiwi/mimikatz/wiki/module-~-sekurlsa#pth
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1550.002/T1550.002.yaml
+author: Sigma Community
+date: 2024-01-15
+modified: 2024-01-15
+tags:
+    - attack.lateral-movement
+    - attack.t1550.002
+    - attack.credential-access
+    - attack.t1003
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_mimikatz:
+        CommandLine|contains: 'mimikatz'
+    selection_pth:
+        CommandLine|contains:
+            - 'sekurlsa::pth'
+            - 'sekurlsa::logonpasswords'
+    selection_standalone:
+        CommandLine|contains|all:
+            - '/ntlm:'
+            - '/user:'
+            - '/domain:'
+    condition: (selection_mimikatz and selection_pth) or selection_standalone
+falsepositives:
+    - Unlikely in production environments; penetration testers using Mimikatz
+level: critical

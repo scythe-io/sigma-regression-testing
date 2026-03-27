@@ -1,0 +1,48 @@
+title: HackTool - Rubeus Kerberoasting and AS-REP Roasting
+id: 7ec2c172-dceb-4c10-92c9-87c1881b7e18
+status: stable
+description: Detects execution of Rubeus, a Kerberos abuse toolkit, used for Kerberoasting (T1558.003) and AS-REP Roasting (T1558.004) attacks to extract service ticket hashes for offline cracking.
+references:
+    - https://attack.mitre.org/techniques/T1558/003/
+    - https://attack.mitre.org/techniques/T1558/004/
+    - https://github.com/GhostPack/Rubeus
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1558.003/T1558.003.yaml
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1558.004/T1558.004.yaml
+author: Florian Roth (Nextron Systems), Sigma Community
+date: 2018-12-19
+modified: 2024-01-15
+tags:
+    - attack.credential-access
+    - attack.t1558.003
+    - attack.t1558.004
+    - attack.t1550.003
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_img:
+        - Image|endswith: '\Rubeus.exe'
+        - OriginalFileName: 'Rubeus.exe'
+        - Description|contains: 'Rubeus'
+    selection_cli:
+        CommandLine|contains:
+            - ' asreproast'
+            - ' kerberoast'
+            - ' dump /luid'
+            - ' dump /service'
+            - ' asktgt /user'
+            - ' asktgs '
+            - ' harvest /interval'
+            - ' s4u '
+            - ' ptt /ticket'
+            - ' /ptt /ticket'
+            - 'renew /ticket'
+            - ' createnetonly'
+            - ' monitor /interval'
+            - ' logonsession'
+            - 'triage'
+            - 'klist'
+    condition: 1 of selection_*
+falsepositives:
+    - Unlikely
+level: critical
