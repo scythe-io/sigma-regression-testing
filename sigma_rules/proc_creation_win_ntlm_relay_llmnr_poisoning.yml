@@ -1,0 +1,51 @@
+title: NTLM Relay and LLMNR/NBT-NS Poisoning Tool Execution
+id: deecd55f-afe0-4a62-9fba-4d1ba2deb321
+status: test
+description: >
+    Detects execution of tools commonly used for LLMNR/NBT-NS poisoning and NTLM relay attacks,
+    including Responder, Inveigh, and related utilities. These tools respond to broadcast name
+    resolution requests to capture Net-NTLMv2 hashes or relay credentials to other services.
+    The detection covers PowerShell-based invocation of Inveigh (via IEX download) and
+    process names associated with Responder.
+references:
+    - https://attack.mitre.org/techniques/T1557/001/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1557.001/T1557.001.yaml
+    - https://github.com/Kevin-Robertson/Inveigh
+    - https://github.com/lgandx/Responder
+author: Sigma Detection Engineering
+date: 2024-01-15
+tags:
+    - attack.credential-access
+    - attack.collection
+    - attack.lateral-movement
+    - attack.t1557.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_responder:
+        Image|endswith:
+            - '\Responder.exe'
+            - '\MultiRelay.exe'
+        Image|contains:
+            - 'Responder'
+    selection_inveigh_iex:
+        CommandLine|contains|all:
+            - 'Inveigh'
+            - 'Invoke-Inveigh'
+    selection_inveigh_args:
+        CommandLine|contains:
+            - 'Invoke-Inveigh'
+            - '-NBNS Y'
+            - '-MDNS Y'
+            - '-LLMNR Y'
+    selection_powershell_inveigh:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains: 'Inveigh'
+    condition: selection_responder or selection_inveigh_iex or (selection_inveigh_args) or selection_powershell_inveigh
+falsepositives:
+    - Authorized penetration testing activities
+    - Red team exercises using these tools with prior approval
+level: high

@@ -532,3 +532,112 @@ tests:
     atomic_test_guid: "0330a5d2-a45a-4272-a9ee-e364411c4b18"
     expected_rules:
       - "Suspicious Office Application Child Process - Malicious Document Execution"
+
+  # ============================================
+  # Priority 2 ATT&CK Gap Coverage
+  # ============================================
+
+  # ---- T1546.003: WMI Event Subscription Persistence ----
+
+  - name: "WMI Persistence via CommandLineEventConsumer"
+    description: "Creates a WMI event filter and CommandLineEventConsumer subscription in root/subscription namespace using New-CimInstance. Sysmon EventIDs 19, 20, and 21 log the WmiEventFilter, WmiEventConsumer, and WmiEventConsumerToFilter binding creation."
+    technique_id: "T1546.003"
+    atomic_test_guid: "3c64f177-28e2-49eb-a799-d767b24dd1e0"
+    expected_rules:
+      - "WMI Event Subscription Persistence"
+
+  - name: "WMI Persistence via ActiveScriptEventConsumer"
+    description: "Creates a WMI event filter and ActiveScriptEventConsumer (VBScript) subscription using Set-WmiInstance. Sysmon EventIDs 19, 20, and 21 log the WmiEventFilter, WmiEventConsumer, and WmiEventConsumerToFilter binding creation."
+    technique_id: "T1546.003"
+    atomic_test_guid: "fecd0dfd-fb55-45fa-a10b-6250272d0832"
+    expected_rules:
+      - "WMI Event Subscription Persistence"
+
+  # ---- T1574.001: DLL Search Order Hijacking ----
+
+  - name: "DLL Search Order Hijacking via amsi.dll Copy to AppData"
+    description: "Copies powershell.exe to %APPDATA%\\updater.exe and copies amsi.dll to %APPDATA%\\amsi.dll. When updater.exe runs, Windows loads the local amsi.dll from %APPDATA% before the System32 version, achieving DLL search order hijacking."
+    technique_id: "T1574.001"
+    atomic_test_guid: "8549ad4b-b5df-4a2d-a3d7-2aee9e7052a3"
+    expected_rules:
+      - "DLL Search Order Hijacking via Suspicious Copy and Rename"
+
+  # ---- T1557.001: NTLM Relay / LLMNR Poisoning ----
+
+  - name: "LLMNR Poisoning with Inveigh (PowerShell IEX)"
+    description: "Downloads and executes Invoke-Inveigh from GitHub via IEX download cradle, then runs Invoke-Inveigh with NBNS, MDNS, HTTPS, and PROXY listeners enabled to capture Net-NTLMv2 hashes."
+    technique_id: "T1557.001"
+    atomic_test_guid: "deecd55f-afe0-4a62-9fba-4d1ba2deb321"
+    expected_rules:
+      - "NTLM Relay and LLMNR/NBT-NS Poisoning Tool Execution"
+
+  # ---- T1135: Network Share Enumeration ----
+
+  - name: "Network Share Discovery via net view"
+    description: "Runs 'net view \\\\<computer_name>' to list network shares on a remote host. net.exe is invoked with the 'view' subcommand, directly triggering the detection."
+    technique_id: "T1135"
+    atomic_test_guid: "20f1097d-81c1-405c-8380-32174d493bbb"
+    expected_rules:
+      - "Network Share Enumeration via Net Commands"
+
+  - name: "Network Share Discovery via net share"
+    description: "Runs 'net share' to list all shares on the local system. net.exe is invoked with the 'share' subcommand, directly triggering the detection."
+    technique_id: "T1135"
+    atomic_test_guid: "ab39a04f-0c93-4540-9ff2-83f862c385ae"
+    expected_rules:
+      - "Network Share Enumeration via Net Commands"
+
+  # ---- T1555.003: Browser Credential Theft ----
+
+  - name: "Simulating Access to Chrome Login Data"
+    description: "Copies Chrome's Login Data SQLite database from %LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Login Data to a temp location, simulating credential harvesting from Chrome's saved password store."
+    technique_id: "T1555.003"
+    atomic_test_guid: "3d111226-d09a-4911-8715-fe11664f960d"
+    expected_rules:
+      - "Browser Credential Theft via Login Data File Access"
+
+  - name: "Simulating Access to Edge Login Data"
+    description: "Copies Microsoft Edge's Login Data file from %LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\Login Data, simulating theft of Edge saved credentials."
+    technique_id: "T1555.003"
+    atomic_test_guid: "a6a5ec26-a2d1-4109-9d35-58b867689329"
+    expected_rules:
+      - "Browser Credential Theft via Login Data File Access"
+
+  - name: "Dump Chrome Login Data with esentutl"
+    description: "Uses esentutl.exe /y to copy Chrome's Login Data file, leveraging a native Windows binary (LOLBIN) to extract the credential database and evade file-access monitoring."
+    technique_id: "T1555.003"
+    atomic_test_guid: "70422253-8198-4019-b617-6be401b49fce"
+    expected_rules:
+      - "Browser Credential Theft via Login Data File Access"
+
+  # ---- T1055.001: Process Injection via CreateRemoteThread (mavinject) ----
+
+  - name: "Process Injection via mavinject.exe /INJECTRUNNING"
+    description: "Injects a DLL into a running process (e.g., notepad.exe) using mavinject.exe with the /INJECTRUNNING flag and target PID. Mavinject is a Microsoft-signed LOLBIN that performs CreateRemoteThread-based DLL injection."
+    technique_id: "T1055.001"
+    atomic_test_guid: "74496461-11a1-4982-b439-4d87a550d254"
+    expected_rules:
+      - "Process Injection via Mavinject.exe (CreateRemoteThread)"
+
+  # ---- T1047: WMIC Reconnaissance / Discovery ----
+
+  - name: "WMIC Reconnaissance - Process Enumeration"
+    description: "Runs 'wmic process get caption,executablepath,commandline /format:csv' to enumerate all running processes with their full command lines, a common post-exploitation discovery step."
+    technique_id: "T1047"
+    atomic_test_guid: "5750aa16-0e59-4410-8b9a-8a47ca2788e2"
+    expected_rules:
+      - "System Reconnaissance via WMIC Discovery Queries"
+
+  - name: "WMIC Reconnaissance - User Account Enumeration"
+    description: "Runs 'wmic useraccount get /ALL /format:csv' to list all local user accounts on the system."
+    technique_id: "T1047"
+    atomic_test_guid: "c107778c-dcf5-47c5-af2e-1d058a3df3ea"
+    expected_rules:
+      - "System Reconnaissance via WMIC Discovery Queries"
+
+  - name: "WMIC Reconnaissance - Installed Patches (QFE)"
+    description: "Runs 'wmic qfe get description,installedOn /format:csv' to enumerate installed hotfixes and security patches, helping adversaries identify unpatched vulnerabilities."
+    technique_id: "T1047"
+    atomic_test_guid: "718aebaa-d0e0-471a-8241-c5afa69c7414"
+    expected_rules:
+      - "System Reconnaissance via WMIC Discovery Queries"

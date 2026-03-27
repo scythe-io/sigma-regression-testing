@@ -1,0 +1,31 @@
+title: Process Injection via Mavinject.exe (CreateRemoteThread)
+id: 74496461-11a1-4982-b439-4d87a550d254
+status: test
+description: >
+    Detects use of mavinject.exe, a Microsoft-signed binary (LOLBIN) that injects a DLL
+    into a running process via CreateRemoteThread. The /INJECTRUNNING flag accepts a target
+    PID and DLL path, making it a commonly abused living-off-the-land technique for
+    process injection to evade endpoint detection products.
+references:
+    - https://attack.mitre.org/techniques/T1055/001/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1055.001/T1055.001.yaml
+    - https://lolbas-project.github.io/lolbas/Binaries/Mavinject/
+author: Sigma Detection Engineering
+date: 2024-01-15
+tags:
+    - attack.defense-evasion
+    - attack.privilege-escalation
+    - attack.t1055.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|endswith: '\mavinject.exe'
+    selection_injectrunning:
+        CommandLine|contains: '/INJECTRUNNING'
+    condition: selection or selection_injectrunning
+falsepositives:
+    - Microsoft App-V (Application Virtualization) uses mavinject.exe legitimately for virtual environment injection
+    - Rare legitimate use by enterprise software deployment systems
+level: high

@@ -1,0 +1,53 @@
+title: DLL Search Order Hijacking via Suspicious Copy and Rename
+id: 8549ad4b-b5df-4a2d-a3d7-2aee9e7052a3
+status: test
+description: >
+    Detects DLL search order hijacking where an attacker copies a legitimate executable
+    to a user-writable directory alongside a malicious DLL with a name that the executable
+    will load before the system-directory version. A common pattern is copying powershell.exe
+    or another trusted binary to %APPDATA% and placing a hijacked amsi.dll or similar DLL
+    in the same folder so Windows loads the attacker-controlled DLL first.
+references:
+    - https://attack.mitre.org/techniques/T1574/001/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1574.001/T1574.001.yaml
+    - https://hijacklibs.net/
+author: Sigma Detection Engineering
+date: 2024-01-15
+tags:
+    - attack.persistence
+    - attack.privilege-escalation
+    - attack.defense-evasion
+    - attack.t1574.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_copy_to_appdata:
+        CommandLine|contains|all:
+            - '\AppData\'
+            - '.dll'
+        CommandLine|contains:
+            - 'copy '
+            - 'xcopy '
+            - 'Copy-Item'
+    selection_copy_sys_exe:
+        CommandLine|contains|all:
+            - '\System32\'
+            - '\AppData\'
+        CommandLine|contains:
+            - 'copy '
+            - 'xcopy '
+            - 'Copy-Item'
+    selection_suspicious_dll_names:
+        CommandLine|contains:
+            - 'amsi.dll'
+            - 'WinAppXRT.dll'
+            - 'ualapi.dll'
+            - 'version.dll'
+            - 'cryptbase.dll'
+            - 'userenv.dll'
+    condition: (selection_copy_to_appdata and selection_suspicious_dll_names) or (selection_copy_sys_exe and selection_suspicious_dll_names)
+falsepositives:
+    - Software installers that legitimately copy DLL files to user directories
+    - Development tools that bundle system DLLs for compatibility
+level: high

@@ -159,20 +159,20 @@ sigma check sigma_rules/*.yml
 
 **Expected output (success):**
 ```
-Checking 134 rules...
+Checking 141 rules...
 
-No issues found in 134 rules.
+No issues found in 141 rules.
 ```
 
 **Expected output (with errors):**
 ```
-Checking 134 rules...
+Checking 141 rules...
 
 sigma_rules/proc_creation_win_bad_rule.yml:
   - error: Missing required field 'logsource'
   - warning: No 'falsepositives' field defined
 
-1 rule with errors, 124 rules OK
+1 rule with errors, 131 rules OK
 ```
 
 ### Step 2: Convert Rules to Splunk Format

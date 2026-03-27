@@ -8,8 +8,8 @@ This is a collection of **detection rules** that help security teams find hacker
 
 The rules are written in **Sigma**, which is like a universal language for detection rules. The advantage is that you write the rule once, and it can be translated to work with whatever security tool your company uses - Splunk, Elastic, Microsoft Sentinel, etc.
 
-Currently there are **134 rules** covering:
-- **Windows** (89 rules) - detecting suspicious processes, registry changes, file activity, network connections, DNS queries, credential access, lateral movement, and Kerberos attacks
+Currently there are **141 rules** covering:
+- **Windows** (95 rules) - detecting suspicious processes, registry changes, file activity, network connections, DNS queries, credential access, lateral movement, Kerberos attacks, WMI persistence, DLL hijacking, NTLM relay, network share enumeration, browser credential theft, and process injection
 - **Linux** (17 rules) - detecting privilege escalation, backdoors, reconnaissance
 - **Microsoft 365/Cloud** (8 rules) - detecting mailbox tampering, suspicious SharePoint activity
 - **Azure** (4 rules) - detecting cloud resource modifications and firewall changes
@@ -48,12 +48,12 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 
 | Step | Status | What We Did |
 |------|--------|-------------|
-| **Rule Upload** | Tested | 134 Sigma rules across Windows, Linux, M365, and Azure |
+| **Rule Upload** | Tested | 141 Sigma rules across Windows, Linux, M365, and Azure |
 | **Validation** | Tested | All rules pass `sigma check` - no syntax errors |
 | **Conversion** | Tested | Ran `convert-to-splunk.py` to generate `savedsearches.conf` for Windows-compatible rules |
 | **Auto-Commit** | Tested | Workflow automatically commits `savedsearches.conf` to repo on rule changes |
 | **Push to Splunk** | Tested | Deployed saved searches to Splunk using `deploy-to-splunk.ps1` |
-| **Regression Testing** | Tested | 52 Atomic Red Team test mappings across process, file, network, registry, and DNS event types |
+| **Regression Testing** | Tested | 65 Atomic Red Team test mappings across process, file, network, registry, DNS, and WMI event types |
 
 ### Atomic Red Team Coverage
 
@@ -77,6 +77,18 @@ Coverage spans multiple log source categories:
 | T1558.004 | AS-REP Roasting | `proc_creation_win_hktl_rubeus_kerberoasting.yml` |
 | T1003.006 | DCSync | `proc_creation_win_hktl_mimikatz_dcsync.yml` |
 | T1204.002 | Malicious Document Execution | `proc_creation_win_office_susp_child_process.yml` |
+
+### Priority 2 ATT&CK Coverage (added 2024-03-27)
+
+| Technique | Description | Rules |
+|-----------|-------------|-------|
+| T1546.003 | WMI Event Subscription (fileless persistence) | `wmi_event_subscription_persistence.yml` |
+| T1574.001 | DLL Search Order Hijacking | `proc_creation_win_dll_search_order_hijacking.yml` |
+| T1557.001 | NTLM Relay / LLMNR Poisoning | `proc_creation_win_ntlm_relay_llmnr_poisoning.yml` |
+| T1135 | Network Share Enumeration | `proc_creation_win_net_share_enumeration.yml` |
+| T1555.003 | Browser Credential Theft | `proc_creation_win_browser_credential_theft.yml` |
+| T1055.001 | Process Injection via CreateRemoteThread (mavinject) | `proc_creation_win_process_injection_mavinject.yml` |
+| T1047 | WMIC Discovery Queries | `proc_creation_win_wmic_recon_discovery.yml` |
 
 ### Earlier Regression Test Results
 

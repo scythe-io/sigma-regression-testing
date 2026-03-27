@@ -1,0 +1,45 @@
+title: System Reconnaissance via WMIC Discovery Queries
+id: 5750aa16-0e59-4410-8b9a-8a47ca2788e2
+status: test
+description: >
+    Detects use of wmic.exe for system reconnaissance including process enumeration,
+    service listing, user account discovery, and installed software queries. Adversaries
+    use WMIC to gather information about the compromised host as part of discovery activities.
+    Covers common recon patterns: 'wmic process', 'wmic service', 'wmic useraccount',
+    'wmic qfe', and 'wmic computersystem'.
+references:
+    - https://attack.mitre.org/techniques/T1047/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1047/T1047.yaml
+    - https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/wmic
+author: Sigma Detection Engineering
+date: 2024-01-15
+tags:
+    - attack.execution
+    - attack.discovery
+    - attack.t1047
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_img:
+        - Image|endswith: '\WMIC.exe'
+        - OriginalFileName: 'wmic.exe'
+    selection_recon:
+        CommandLine|contains:
+            - 'useraccount'
+            - 'computersystem'
+            - 'qfe'
+            - 'nicconfig'
+            - 'logicaldisk'
+            - 'startup'
+    filter_exec:
+        CommandLine|contains|all:
+            - 'process'
+            - 'call'
+            - 'create'
+    condition: selection_img and selection_recon and not filter_exec
+falsepositives:
+    - System monitoring and inventory tools that use WMIC for asset discovery
+    - IT administration scripts that query system information
+    - Vulnerability scanners performing asset enumeration
+level: medium
