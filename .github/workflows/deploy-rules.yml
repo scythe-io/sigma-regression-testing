@@ -44,9 +44,9 @@ jobs:
       - name: Validate rules before deployment
         run: |
           echo "=== Pre-deployment Validation ==="
-          sigma check SCYTHE_Rules/*.yml
+          sigma check sigma_rules/*.yml
 
-          OUTPUT=$(sigma check SCYTHE_Rules/*.yml 2>&1)
+          OUTPUT=$(sigma check sigma_rules/*.yml 2>&1)
           if echo "$OUTPUT" | grep -q "Found [1-9][0-9]* errors"; then
             echo "::error::Validation failed - aborting deployment"
             exit 1
@@ -65,7 +65,7 @@ jobs:
       - name: Prepare rules package
         run: |
           mkdir -p deploy-package
-          cp SCYTHE_Rules/*.yml deploy-package/
+          cp sigma_rules/*.yml deploy-package/
           echo "Prepared $(ls -1 deploy-package/*.yml | wc -l) rules for deployment"
 
       # ==============================================================

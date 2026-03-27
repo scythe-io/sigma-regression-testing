@@ -8,10 +8,11 @@ This is a collection of **detection rules** that help security teams find hacker
 
 The rules are written in **Sigma**, which is like a universal language for detection rules. The advantage is that you write the rule once, and it can be translated to work with whatever security tool your company uses - Splunk, Elastic, Microsoft Sentinel, etc.
 
-Currently there are **75 rules** covering:
-- **Windows** (44 rules) - detecting suspicious processes, registry changes, file activity
-- **Linux** (13 rules) - detecting privilege escalation, backdoors, reconnaissance
+Currently there are **128 rules** covering:
+- **Windows** (82 rules) - detecting suspicious processes, registry changes, file activity, network connections, DNS queries, and credential access
+- **Linux** (17 rules) - detecting privilege escalation, backdoors, reconnaissance
 - **Microsoft 365/Cloud** (8 rules) - detecting mailbox tampering, suspicious SharePoint activity
+- **Azure** (4 rules) - detecting cloud resource modifications and firewall changes
 
 ---
 
@@ -47,19 +48,30 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 
 | Step | Status | What We Did |
 |------|--------|-------------|
-| **Rule Upload** | Tested | Added 75 Sigma rules to the repository |
+| **Rule Upload** | Tested | 128 Sigma rules across Windows, Linux, M365, and Azure |
 | **Validation** | Tested | All rules pass `sigma check` - no syntax errors |
-| **Conversion** | Tested | Ran `convert-to-splunk.py` to generate `savedsearches.conf` with 55 Windows rules |
+| **Conversion** | Tested | Ran `convert-to-splunk.py` to generate `savedsearches.conf` for Windows-compatible rules |
 | **Auto-Commit** | Tested | Workflow automatically commits `savedsearches.conf` to repo on rule changes |
-| **Push to Splunk** | Tested | Deployed 41 saved searches to Splunk using `deploy-to-splunk.ps1` (2 complex rules need manual setup) |
-| **Regression Testing** | Tested | Ran 19 Atomic Red Team tests against Splunk rules via WinRM |
+| **Push to Splunk** | Tested | Deployed saved searches to Splunk using `deploy-to-splunk.ps1` |
+| **Regression Testing** | Tested | 40 Atomic Red Team test mappings across process, file, network, registry, and DNS event types |
 
-### Regression Test Results
+### Atomic Red Team Coverage
+
+Rules are mapped to verified Atomic Red Team tests in `tests/art_mapping.yaml`. Each mapping was confirmed by checking the actual ART executor command against the Sigma detection logic — only tests that genuinely trigger the rule are included.
+
+Coverage spans multiple log source categories:
+- **Process creation** - LOLBin abuse, defense evasion, persistence, credential access
+- **Registry** - WDigest caching, Defender exclusions, UAC bypass, logon script persistence
+- **File events** - LSASS dump files, startup folder writes
+- **Network connections** - Regsvr32 and Rundll32 remote payload delivery
+- **DNS queries** - Regsvr32 COM scriptlet resolution
+
+### Earlier Regression Test Results
 
 Using the `regression-test.py` script with Atomic Red Team on a remote Windows target:
 
 - **7 tests passed** - Rules correctly detected the atomic attacks
-- **12 tests need tuning** - Atomics ran but rules didn't trigger (useful for identifying rule gaps)
+- **12 tests needed tuning** - Identified rule gaps and detection logic mismatches
 
 Passing tests include:
 - Event log clearing detection
@@ -111,7 +123,7 @@ pip install argcomplete
 ```text
                                     ┌─────────────────────────────────┐
                                     │      WRITE SIGMA RULES          │
-                                    │   (SCYTHE_Rules/*.yml)          │
+                                    │   (sigma_rules/*.yml)          │
                                     └───────────────┬─────────────────┘
                                                     │
                                                     ▼
@@ -157,7 +169,7 @@ pip install argcomplete
 │                                                                               │
 │   ┌──────────────────────────────────────────────────────────────────────┐   │
 │   │                                                                       │   │
-│   │  SCYTHE_Rules/*.yml                                                   │   │
+│   │  sigma_rules/*.yml                                                   │   │
 │   │         │                                                             │   │
 │   │         ▼                                                             │   │
 │   │  ┌─────────────────────┐      ┌─────────────────────────────────┐    │   │

@@ -15,7 +15,7 @@
     Branch to pull from (default: main)
 
 .PARAMETER RulesPath
-    Path within the repo containing rules (default: SCYTHE_Rules)
+    Path within the repo containing rules (default: sigma_rules)
 
 .PARAMETER AuroraPath
     Aurora Agent installation path (default: C:\Program Files\Aurora-Agent)
@@ -38,7 +38,7 @@ param(
     [string]$Branch = "main",
 
     [Parameter(Mandatory=$false)]
-    [string]$RulesPath = "SCYTHE_Rules",
+    [string]$RulesPath = "sigma_rules",
 
     [Parameter(Mandatory=$false)]
     [string]$AuroraPath = "C:\Program Files\Aurora-Agent",

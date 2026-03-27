@@ -1,0 +1,24 @@
+title: Potential Persistence Via Logon Scripts - Registry
+id: 9ace0707-b560-49b8-b6ca-5148b42f39fb
+status: test
+description: Detects creation of the "UserInitMprLogonScript" registry value, which causes Windows to execute a script at user logon. Used by attackers for persistence and lateral movement.
+references:
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1037.001/T1037.001.md
+author: Tom Ueltschi (@c_APT_ure)
+date: 2019-01-12
+modified: 2025-10-26
+tags:
+    - attack.privilege-escalation
+    - attack.t1037.001
+    - attack.persistence
+    - attack.lateral-movement
+logsource:
+    category: registry_set
+    product: windows
+detection:
+    selection:
+        TargetObject|contains: 'UserInitMprLogonScript'
+    condition: selection
+falsepositives:
+    - Investigate the contents of the UserInitMprLogonScript value to determine if the added script is legitimate
+level: medium

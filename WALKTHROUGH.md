@@ -154,25 +154,25 @@ Validation ensures all rules are syntactically correct and follow Sigma specific
 
 **Command:**
 ```bash
-sigma check SCYTHE_Rules/*.yml
+sigma check sigma_rules/*.yml
 ```
 
 **Expected output (success):**
 ```
-Checking 75 rules...
+Checking 128 rules...
 
-No issues found in 75 rules.
+No issues found in 128 rules.
 ```
 
 **Expected output (with errors):**
 ```
-Checking 75 rules...
+Checking 128 rules...
 
-SCYTHE_Rules/proc_creation_win_bad_rule.yml:
+sigma_rules/proc_creation_win_bad_rule.yml:
   - error: Missing required field 'logsource'
   - warning: No 'falsepositives' field defined
 
-1 rule with errors, 74 rules OK
+1 rule with errors, 127 rules OK
 ```
 
 ### Step 2: Convert Rules to Splunk Format
@@ -186,21 +186,20 @@ python scripts/convert-to-splunk.py --list-compatible
 
 **Expected output:**
 ```
-Compatible Windows rules found: 55
+Compatible Windows rules found: ~80
 
 Rules that will be converted:
   1. proc_creation_win_conti_discovery.yml
   2. proc_creation_win_domain_enumeration.yml
   3. proc_creation_win_encoded_ps_execution.yml
   ...
-  55. reg_set_win_run_key_modification.yml
 
 Run without --list-compatible to perform conversion.
 ```
 
 **Command (perform conversion):**
 ```bash
-python scripts/convert-to-splunk.py -i SCYTHE_Rules -o splunk_output
+python scripts/convert-to-splunk.py -i sigma_rules -o splunk_output
 ```
 
 **Expected output:**
@@ -208,7 +207,7 @@ python scripts/convert-to-splunk.py -i SCYTHE_Rules -o splunk_output
 Sigma to Splunk Converter
 =========================
 
-Processing Windows rules from SCYTHE_Rules...
+Processing Windows rules from sigma_rules...
   ✓ proc_creation_win_conti_discovery.yml
   ✓ proc_creation_win_domain_enumeration.yml
   ✓ proc_creation_win_encoded_ps_execution.yml
@@ -216,12 +215,12 @@ Processing Windows rules from SCYTHE_Rules...
 
 Conversion Summary
 ==================
-Total rules processed: 55
-Successfully converted: 55
+Total rules processed: ~80
+Successfully converted: ~80
 Failed conversions: 0
 
 Output files:
-  - splunk_output/savedsearches.conf (55 searches)
+  - splunk_output/savedsearches.conf (~80 searches)
   - splunk_output/conversion_report.json
 ```
 
@@ -234,7 +233,7 @@ head -30 splunk_output/savedsearches.conf
 ```conf
 # Sigma Rules - Converted to Splunk Saved Searches
 # Generated: 2026-01-27T10:30:00
-# Total searches: 55
+# Total searches: ~80
 
 [Conti Ransomware Discovery Commands]
 description = Detects commands commonly used by Conti ransomware for system discovery
@@ -731,8 +730,8 @@ Test-WSMan -ComputerName 192.168.1.100
 
 | Task | Command |
 |------|---------|
-| Validate rules | `sigma check SCYTHE_Rules/*.yml` |
-| Convert to Splunk | `python scripts/convert-to-splunk.py -i SCYTHE_Rules -o splunk_output` |
+| Validate rules | `sigma check sigma_rules/*.yml` |
+| Convert to Splunk | `python scripts/convert-to-splunk.py -i sigma_rules -o splunk_output` |
 | Deploy (dry run) | `.\scripts\deploy-to-splunk.ps1 -SplunkHost HOST -Username USER -DryRun` |
 | Deploy (actual) | `.\scripts\deploy-to-splunk.ps1 -SplunkHost HOST -Username USER` |
 | Test (dry run) | `python scripts/regression-test.py --splunk-host HOST --test-config tests/art_mapping.yaml --dry-run` |
@@ -752,7 +751,7 @@ Test-WSMan -ComputerName 192.168.1.100
 
 After completing this walkthrough:
 
-1. **Add new detection rules** - Create `.yml` files in `SCYTHE_Rules/` following existing patterns
+1. **Add new detection rules** - Create `.yml` files in `sigma_rules/` following existing patterns, and add a matching entry to `tests/art_mapping.yaml`
 2. **Map tests** - Add entries to `tests/art_mapping.yaml` for new rules
 3. **Tune rules** - Investigate failed tests and adjust detection logic
 4. **Enable alerts** - Use `--EnableAlerts` flag to configure scheduled alerting

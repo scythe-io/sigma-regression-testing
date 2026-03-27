@@ -1,0 +1,34 @@
+title: Potential Persistence Attempt Via Run Keys Using Reg.EXE
+id: de587dce-915e-4218-aac4-835ca6af6f70
+status: test
+description: Detects suspicious command line reg.exe tool adding key to RUN key in Registry, commonly used for persistence.
+references:
+    - https://app.any.run/tasks/9c0f37bc-867a-4314-b685-e101566766d7/
+    - https://learn.microsoft.com/en-us/windows/win32/setupapi/run-and-runonce-registry-keys
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1547.001/T1547.001.md
+author: Florian Roth (Nextron Systems), Swachchhanda Shrawan Poudel (Nextron Systems)
+date: 2021-06-28
+modified: 2025-02-17
+tags:
+    - attack.privilege-escalation
+    - attack.persistence
+    - attack.t1547.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|endswith: '\reg.exe'
+        CommandLine|contains|all:
+            - 'reg'
+            - ' add '
+        CommandLine|contains:
+            - 'Software\Microsoft\Windows\CurrentVersion\Run'
+            - '\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Run'
+            - '\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run'
+    condition: selection
+falsepositives:
+    - Legitimate software automatically sets up autorun keys for legitimate reasons during installation.
+    - Legitimate administrator sets up autorun keys for legitimate reasons.
+    - Discord and other messaging apps
+level: medium

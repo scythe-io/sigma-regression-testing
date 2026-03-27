@@ -193,6 +193,96 @@ tests:
   # tests don't properly trigger the expected Sigma rules. Uncomment to test
   # after updating the corresponding Sigma rules.
 
+  # ============================================
+  # SigmaHQ Community Rules - 20 New Correlations
+  # ============================================
+
+  # ---- T1218.010: Regsvr32 Suspicious Child Process ----
+
+  - name: "Regsvr32 COM Scriptlet Execution"
+    description: "Executes a local COM scriptlet via regsvr32, which may spawn suspicious child processes"
+    technique_id: "T1218.010"
+    atomic_test_guid: "449aa403-6aba-47ce-8a37-247d21ef0306"
+    expected_rules:
+      - "Potentially Suspicious Child Process Of Regsvr32"
+
+  # ---- T1197: BITSAdmin File Download ----
+
+  - name: "BITSAdmin Download via Transfer"
+    description: "Uses bitsadmin /transfer to download a file from the internet"
+    technique_id: "T1197"
+    atomic_test_guid: "3c73d728-75fb-4180-a12f-6712864d7421"
+    expected_rules:
+      - "File Download Via Bitsadmin"
+
+  # ---- T1569.002: New Service Creation via sc.exe ----
+
+  - name: "Execute Command as a Windows Service"
+    description: "Creates a new service using sc.exe with a binPath pointing to cmd.exe"
+    technique_id: "T1569.002"
+    atomic_test_guid: "2382dee2-a75f-49aa-9378-f52df6ed3fb1"
+    expected_rules:
+      - "New Service Creation Using Sc.EXE"
+
+  # ---- T1036.003: Renamed Binary (Highly Relevant) ----
+
+  - name: "Masquerading - Windows EXE Running as Different Windows EXE"
+    description: "Copies and renames a system binary to masquerade as another process using OriginalFileName"
+    technique_id: "T1036.003"
+    atomic_test_guid: "c3d24a39-2bfe-4c6a-b064-90cd73896cb0"
+    expected_rules:
+      - "Potential Defense Evasion Via Rename Of Highly Relevant Binaries"
+      - "Potential Defense Evasion Via Binary Rename"
+
+  # ---- T1547.001: Run Key Persistence via reg.exe ----
+
+  - name: "Registry Run Key Persistence via Reg.EXE"
+    description: "Adds a Run key entry via reg.exe to establish persistence at logon"
+    technique_id: "T1547.001"
+    atomic_test_guid: "e55be3fd-3521-4610-9d1a-e210e42dcf05"
+    expected_rules:
+      - "Potential Persistence Attempt Via Run Keys Using Reg.EXE"
+      - "Registry Run Key Modification"
+
+  # ---- T1548.002: UAC Bypass via Fodhelper ----
+
+  - name: "UAC Bypass via Fodhelper.exe"
+    description: "Abuses fodhelper.exe to bypass User Account Control and execute a command with elevated privileges"
+    technique_id: "T1548.002"
+    atomic_test_guid: "58f641ea-12e3-499a-b684-44dee46bd182"
+    expected_rules:
+      - "Bypass UAC via Fodhelper.exe"
+
+  # ---- T1140: Certutil Decode ----
+
+  - name: "Certutil Base64 Decode"
+    description: "Uses certutil -decode to decode a base64-encoded file, a common malware staging technique"
+    technique_id: "T1140"
+    atomic_test_guid: "71abc534-3c05-4d0c-80f7-cbe93cb2aa94"
+    expected_rules:
+      - "File Decoded From Base64/Hex Via Certutil.EXE"
+
+  # ---- T1562.004: Disable Firewall via Netsh ----
+
+  - name: "Disable Windows Defender Firewall via Netsh"
+    description: "Uses netsh advfirewall to disable the Windows firewall for all profiles"
+    technique_id: "T1562.004"
+    atomic_test_guid: "88d05800-a5e4-407e-9b53-ece4174f197f"
+    expected_rules:
+      - "Firewall Disabled via Netsh.EXE"
+
+  # ---- T1105: Certutil File Download ----
+
+  - name: "Certutil Download via URLCache"
+    description: "Uses certutil -urlcache -split -f to download a file from a remote URL"
+    technique_id: "T1105"
+    atomic_test_guid: "dd3b61dd-7bbc-48cd-ab51-49ad1a776df0"
+    expected_rules:
+      - "Suspicious Download Via Certutil.EXE"
+
+  # ====================================================
+  # COMMENTED OUT - Tests that don't match current rules
+  # ====================================================
   # ---- T1070.001: Event Log Clearing via wevtutil ----
   # Issue: Rule detects PowerShell cmdlets, but these atomics use wevtutil.exe
   # Fix needed: Create Sigma rule for wevtutil-based log clearing
@@ -245,3 +335,90 @@ tests:
   #   atomic_test_guid: "a238e48e-22c4-4a3c-8db4-32e9a9f25cc6"
   #   expected_rules:
   #     - "File Permission Modification via Icacls Denying Everyone Access"
+
+  # ============================================
+  # Multi-Category Rules (network, file, dns, registry)
+  # ============================================
+
+  # ---- T1218.010: Regsvr32 Network Connection ----
+
+  - name: "Regsvr32 Remote COM Scriptlet Network Connection"
+    description: "Regsvr32 fetches a remote .sct COM scriptlet, generating a network connection and DNS query event from regsvr32.exe"
+    technique_id: "T1218.010"
+    atomic_test_guid: "c9d0c4ef-8a96-4794-a75b-3d3a5e6f2a36"
+    expected_rules:
+      - "Network Connection Initiated By Regsvr32.EXE"
+      - "DNS Query Request By Regsvr32.EXE"
+      - "Potentially Suspicious Child Process Of Regsvr32"
+
+  # ---- T1218.011: Rundll32 Internet Connection ----
+
+  - name: "Rundll32 JavaScript Remote Payload via GetObject"
+    description: "Rundll32 executes inline JavaScript that calls GetObject to fetch a remote script, initiating an outbound network connection to a public IP"
+    technique_id: "T1218.011"
+    atomic_test_guid: "57ba4ce9-ee7a-4f27-9928-3c70c489b59d"
+    expected_rules:
+      - "Rundll32 Internet Connection"
+
+  # ---- T1003.001: LSASS Dump File Creation ----
+
+  - name: "Dump LSASS Memory via comsvcs.dll MiniDump"
+    description: "Rundll32 invokes comsvcs.dll MiniDump to dump LSASS memory to %TEMP%\\lsass-comsvcs.dmp, triggering a file_event detection on the dump filename"
+    technique_id: "T1003.001"
+    atomic_test_guid: "2536dee2-12fb-459a-8c37-971844fa73be"
+    expected_rules:
+      - "LSASS Process Memory Dump Files"
+      - "Rundll32 Execution with Suspicious Context"
+
+  # ---- T1547.001: Startup Folder File Write ----
+
+  - name: "VBScript Written to Startup Folder"
+    description: "Copies a .vbs file into both user and system Startup folders, generating file_event detections on the startup folder path"
+    technique_id: "T1547.001"
+    atomic_test_guid: "2cb98256-625e-4da9-9d44-f2e5f90b8bd5"
+    expected_rules:
+      - "Suspicious Startup Folder Persistence"
+      - "Startup Folder File Write"
+
+  - name: "BAT Script Written to Startup Folder"
+    description: "Copies a .bat file into both user and system Startup folders, generating file_event detections on the startup folder path"
+    technique_id: "T1547.001"
+    atomic_test_guid: "5b6768e4-44d2-44f0-89da-a01d1430fd5e"
+    expected_rules:
+      - "Startup Folder File Write"
+
+  # ---- T1112: WDigest Credential Caching via Registry ----
+
+  - name: "Enable WDigest UseLogonCredential via Reg.EXE"
+    description: "Sets WDigest\\UseLogonCredential to 1 via reg.exe, enabling clear-text credential caching in LSASS memory"
+    technique_id: "T1112"
+    atomic_test_guid: "c0413fb5-33e2-40b7-9b6f-60b29f4a7a18"
+    expected_rules:
+      - "Wdigest Enable UseLogonCredential"
+
+  # ---- T1562.001: Windows Defender Exclusion Added ----
+
+  - name: "Add Windows Defender Exclusion Path via PowerShell"
+    description: "Uses Add-MpPreference to add a folder exclusion, writing to the Defender Exclusions registry key"
+    technique_id: "T1562.001"
+    atomic_test_guid: "0b19f4ee-de90-4059-88cb-63c800c683ed"
+    expected_rules:
+      - "Windows Defender Exclusions Added - Registry"
+
+  # ---- T1548.002: UAC Bypass via Event Viewer Registry Hijack ----
+
+  - name: "UAC Bypass via Event Viewer Registry Hijack"
+    description: "Writes cmd.exe path to HKCU\\...\\mscfile\\shell\\open\\command, then launches eventvwr.msc to execute cmd.exe with elevated privileges"
+    technique_id: "T1548.002"
+    atomic_test_guid: "5073adf8-9a50-4bd9-b298-a9bd2ead8af9"
+    expected_rules:
+      - "UAC Bypass via Event Viewer"
+
+  # ---- T1037.001: Logon Script Persistence via Registry ----
+
+  - name: "Logon Script Persistence via UserInitMprLogonScript"
+    description: "Adds a batch script path to HKCU\\Environment\\UserInitMprLogonScript so it executes at every user logon"
+    technique_id: "T1037.001"
+    atomic_test_guid: "d6042746-07d4-4c92-9ad8-e644c114a231"
+    expected_rules:
+      - "Potential Persistence Via Logon Scripts - Registry"

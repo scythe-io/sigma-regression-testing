@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'SCYTHE_Rules/**'
+      - 'sigma_rules/**'
   pull_request:
     branches: [main]
     paths:
-      - 'SCYTHE_Rules/**'
+      - 'sigma_rules/**'
   workflow_dispatch:
     inputs:
       deploy:
@@ -48,12 +48,12 @@ jobs:
       - name: Validate Sigma rules
         run: |
           echo "=== Validating Sigma Rules ==="
-          sigma check SCYTHE_Rules/*.yml
+          sigma check sigma_rules/*.yml
 
       - name: Convert to Splunk format
         run: |
           echo "=== Converting to Splunk Saved Searches ==="
-          python scripts/convert-to-splunk.py -i SCYTHE_Rules -o splunk_output
+          python scripts/convert-to-splunk.py -i sigma_rules -o splunk_output
 
       - name: Display conversion summary
         run: |

@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 from collections import Counter
 
-RULES_DIR = "SCYTHE_Rules"
+RULES_DIR = "sigma_rules"
 README_PATH = "README.md"
 
 

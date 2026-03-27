@@ -16,28 +16,28 @@ pip install -r requirements.txt
 
 | Metric | Count |
 |--------|-------|
-| **Total Rules** | 75 |
-| **Windows Rules** | 44 |
-| **Linux Rules** | 13 |
+| **Total Rules** | 128 |
+| **Windows Rules** | 82 |
+| **Linux Rules** | 17 |
 | **M365/Cloud Rules** | 8 |
 
 ### Rule Categories
 
 | Category | Description | Count |
 |----------|-------------|-------|
-| `proc_creation` | Process creation events | 45 |
-| `file_event` | File system activity | 7 |
+| `proc_creation` | Process creation events | 80 |
+| `file_event` | File system events (writes, creates) | 11 |
+| `registry_set` / `reg_set` | Registry modifications | 8 |
+| `sysmon_*` | Sysmon-specific threat actor TTPs | 8 |
 | `m365_*` | Microsoft 365 audit logs | 5 |
-| `reg_set` | Registry modifications | 4 |
-| `sysmon_lockbitv3` | Other events | 3 |
-| `net_connection` | Network connections | 2 |
-| `sysmon_ALPHVblackcat` | Other events | 2 |
+| `azure_*` | Azure cloud resource events | 4 |
+| `net_connection` | Outbound network connections | 4 |
 | `web_sharepoint` | SharePoint web activity | 2 |
-| `security_*` | Security event logs | 1 |
+| `dns_query` | DNS query events | 1 |
 | `file_creation` | File creation events | 1 |
-| `sysmon_medusa` | Other events | 1 |
-| `sysmon_RAS` | Other events | 1 |
-| `sysmon_netconnect` | Other events | 1 |
+| `posh_ps` | PowerShell script block events | 1 |
+| `powershell_base64` | Encoded PowerShell execution | 1 |
+| `security_*` | Windows Security event logs | 1 |
 
 ## Rule Design Philosophy
 
@@ -70,27 +70,27 @@ pip install argcomplete
 # sigma-cli is included in requirements.txt
 
 # Validate all rules
-sigma check SCYTHE_Rules/*.yml
+sigma check sigma_rules/*.yml
 ```
 
 ### Convert to SIEM Format
 
 ```bash
 # Convert to Splunk
-sigma convert -t splunk SCYTHE_Rules/*.yml
+sigma convert -t splunk sigma_rules/*.yml
 
 # Convert to Elastic
-sigma convert -t elasticsearch SCYTHE_Rules/*.yml
+sigma convert -t elasticsearch sigma_rules/*.yml
 
 # Convert to Microsoft Sentinel
-sigma convert -t microsoft365defender SCYTHE_Rules/*.yml
+sigma convert -t microsoft365defender sigma_rules/*.yml
 ```
 
 ## Repository Structure
 
 ```text
 .
-├── SCYTHE_Rules/              # Sigma detection rules
+├── sigma_rules/              # Sigma detection rules
 │   ├── proc_creation_*.yml    # Process creation rules
 │   ├── file_event_*.yml       # File event rules
 │   ├── reg_set_*.yml          # Registry rules
@@ -124,7 +124,7 @@ This repository includes GitHub Actions workflows for automated validation and d
 Automatically validates rules on every code change.
 
 **Triggers:**
-- Push to `main` branch (when `SCYTHE_Rules/` changes)
+- Push to `main` branch (when `sigma_rules/**` changes)
 - Pull requests to `main` branch
 - Manual trigger
 
@@ -136,7 +136,7 @@ Automatically validates rules on every code change.
 ├─────────────────────────────────────────────────────────────┤
 │  1. Checkout code                                           │
 │  2. Install Python 3.11 + sigma-cli                         │
-│  3. Run: sigma check SCYTHE_Rules/*.yml                     │
+│  3. Run: sigma check sigma_rules/*.yml                     │
 │  4. If errors found → FAIL (blocks PR merge)                │
 │  5. If clean → PASS and display rule count                  │
 └─────────────────────────────────────────────────────────────┘
@@ -207,7 +207,7 @@ pip install sigma-cli pysigma pysigma-backend-splunk pysigma-pipeline-windows Py
 python scripts/convert-to-splunk.py --list-compatible
 
 # Convert all rules
-python scripts/convert-to-splunk.py -i SCYTHE_Rules -o splunk_output
+python scripts/convert-to-splunk.py -i sigma_rules -o splunk_output
 ```
 
 **Deploy to Splunk:**
@@ -454,8 +454,8 @@ These rules are compatible with [Aurora Agent](https://www.nextron-systems.com/a
 Copy rules to Aurora's custom signatures folder:
 
 ```powershell
-Copy-Item .\SCYTHE_Rules\*.yml "C:\Program Files\Aurora-Agent\custom-signatures\"
-Restart-Service "intend Aurora Agent Service"
+Copy-Item .\sigma_rules\proc_creation_win_*.yml "C:\Program Files\Aurora-Agent\custom-signatures\"
+Restart-Service "Aurora Agent"
 ```
 
 Automated sync and deployment tooling coming soon.
@@ -464,7 +464,7 @@ Automated sync and deployment tooling coming soon.
 
 ### Adding New Rules
 
-1. Create a new `.yml` file in `SCYTHE_Rules/`
+1. Create a new `.yml` file in `sigma_rules/`
 2. Follow the naming convention: `<logsource>_<description>.yml`
 3. Ensure the rule passes validation: `sigma check your-rule.yml`
 4. Submit a pull request

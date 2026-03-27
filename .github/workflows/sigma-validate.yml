@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'SCYTHE_Rules/**'
+      - 'sigma_rules/**'
   pull_request:
     branches: [main]
     paths:
-      - 'SCYTHE_Rules/**'
+      - 'sigma_rules/**'
   workflow_dispatch:
 
 jobs:
@@ -32,12 +32,12 @@ jobs:
       - name: Validate Sigma rules
         run: |
           echo "=== Validating Sigma Rules ==="
-          sigma check SCYTHE_Rules/*.yml
+          sigma check sigma_rules/*.yml
 
       - name: Check for rule errors
         run: |
           # Run sigma check and capture output
-          OUTPUT=$(sigma check SCYTHE_Rules/*.yml 2>&1)
+          OUTPUT=$(sigma check sigma_rules/*.yml 2>&1)
           echo "$OUTPUT"
 
           # Check for errors
@@ -56,7 +56,7 @@ jobs:
 
       - name: Count rules
         run: |
-          RULE_COUNT=$(ls -1 SCYTHE_Rules/*.yml 2>/dev/null | wc -l)
+          RULE_COUNT=$(ls -1 sigma_rules/*.yml 2>/dev/null | wc -l)
           echo "::notice::Total rules: $RULE_COUNT"
           echo "## Sigma Rules Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Total Rules:** $RULE_COUNT" >> $GITHUB_STEP_SUMMARY
@@ -75,7 +75,7 @@ jobs:
       - name: Package rules
         run: |
           mkdir -p release
-          cp SCYTHE_Rules/*.yml release/
+          cp sigma_rules/*.yml release/
           cd release && zip -r ../sigma-rules-${{ github.sha }}.zip .
 
       - name: Upload artifact

@@ -1,0 +1,26 @@
+title: Windows Defender Exclusions Added - Registry
+id: a982fc9c-6333-4ffb-a51d-addb04e8b529
+related:
+    - id: 1321dc4e-a1fe-481d-a016-52c45f0c8b4f
+      type: derived
+status: test
+description: Detects the addition of Windows Defender exclusions via registry, which attackers use to prevent Defender from scanning their tools or payloads.
+references:
+    - https://twitter.com/_nullbind/status/1204923340810543109
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1562.001/T1562.001.md
+author: Christian Burkard (Nextron Systems)
+date: 2021-07-06
+modified: 2023-08-17
+tags:
+    - attack.defense-evasion
+    - attack.t1562.001
+logsource:
+    product: windows
+    category: registry_set
+detection:
+    selection:
+        TargetObject|contains: '\Microsoft\Windows Defender\Exclusions'
+    condition: selection
+falsepositives:
+    - Administrator actions adding legitimate exclusions
+level: medium

@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-RULES_DIR = "SCYTHE_Rules"
+RULES_DIR = "sigma_rules"
 OUTPUT_DIR = "splunk_output"
 
 # Rules compatible with Splunk (Windows-based logsources)
