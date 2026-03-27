@@ -16,8 +16,8 @@ pip install -r requirements.txt
 
 | Metric | Count |
 |--------|-------|
-| **Total Rules** | 128 |
-| **Windows Rules** | 82 |
+| **Total Rules** | 125 |
+| **Windows Rules** | 80 |
 | **Linux Rules** | 17 |
 | **M365/Cloud Rules** | 8 |
 
@@ -25,19 +25,27 @@ pip install -r requirements.txt
 
 | Category | Description | Count |
 |----------|-------------|-------|
-| `proc_creation` | Process creation events | 80 |
-| `file_event` | File system events (writes, creates) | 11 |
-| `registry_set` / `reg_set` | Registry modifications | 8 |
-| `sysmon_*` | Sysmon-specific threat actor TTPs | 8 |
+| `proc_creation` | Process creation events | 77 |
+| `file_event` | File system activity | 11 |
 | `m365_*` | Microsoft 365 audit logs | 5 |
-| `azure_*` | Azure cloud resource events | 4 |
-| `net_connection` | Outbound network connections | 4 |
+| `net_connection` | Network connections | 4 |
+| `reg_set` | Registry modifications | 4 |
+| `registry_set` | Other events | 4 |
+| `sysmon_lockbitv3` | Other events | 3 |
 | `web_sharepoint` | SharePoint web activity | 2 |
-| `dns_query` | DNS query events | 1 |
+| `sysmon_ALPHVblackcat` | Other events | 2 |
+| `azure_network` | Other events | 2 |
+| `dns_query` | Other events | 1 |
+| `azure_firewall` | Other events | 1 |
+| `sysmon_medusa` | Other events | 1 |
+| `azure_application` | Other events | 1 |
+| `sysmon_RAS` | Other events | 1 |
 | `file_creation` | File creation events | 1 |
-| `posh_ps` | PowerShell script block events | 1 |
-| `powershell_base64` | Encoded PowerShell execution | 1 |
-| `security_*` | Windows Security event logs | 1 |
+| `bitsadmin_mal` | Other events | 1 |
+| `posh_ps` | Other events | 1 |
+| `powershell_base64` | Other events | 1 |
+| `sysmon_netconnect` | Other events | 1 |
+| `security_*` | Security event logs | 1 |
 
 ## Rule Design Philosophy
 
