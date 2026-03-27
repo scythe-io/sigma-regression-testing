@@ -29,24 +29,24 @@ pip install -r requirements.txt
 | `file_event` | File system activity | 11 |
 | `m365_*` | Microsoft 365 audit logs | 5 |
 | `net_connection` | Network connections | 4 |
-| `registry_set` | Other events | 4 |
 | `reg_set` | Registry modifications | 4 |
+| `registry_set` | Other events | 4 |
 | `sysmon_lockbitv3` | Other events | 3 |
-| `azure_network` | Other events | 2 |
-| `sysmon_ALPHVblackcat` | Other events | 2 |
 | `web_sharepoint` | SharePoint web activity | 2 |
-| `azure_application` | Other events | 1 |
-| `azure_firewall` | Other events | 1 |
-| `bitsadmin_mal` | Other events | 1 |
+| `sysmon_ALPHVblackcat` | Other events | 2 |
+| `azure_network` | Other events | 2 |
 | `dns_query` | Other events | 1 |
+| `azure_firewall` | Other events | 1 |
+| `sysmon_medusa` | Other events | 1 |
+| `azure_application` | Other events | 1 |
+| `wmi_event` | Other events | 1 |
+| `sysmon_RAS` | Other events | 1 |
 | `file_creation` | File creation events | 1 |
+| `bitsadmin_mal` | Other events | 1 |
 | `posh_ps` | Other events | 1 |
 | `powershell_base64` | Other events | 1 |
-| `security_*` | Security event logs | 1 |
-| `sysmon_medusa` | Other events | 1 |
 | `sysmon_netconnect` | Other events | 1 |
-| `sysmon_RAS` | Other events | 1 |
-| `wmi_event` | Other events | 1 |
+| `security_*` | Security event logs | 1 |
 
 ## Rule Design Philosophy
 
