@@ -1,5 +1,5 @@
-title: LockBit 3.0 Ransomware Registry Modifications
-id: bbe4ab32-4862-4227-a607-0f68f5bae418
+title: LockBit 3.0 Ransomware Registry Modifications (Sysmon)
+id: d3d3d840-3da2-4df2-9aa3-43d8e603f408
 status: experimental
 description: Detects registry modifications commonly performed by LockBit 3.0 ransomware to disable security controls, including disabling SmartScreen, Windows Event Logging, Windows Defender real-time protection, Windows Firewall, and enabling automatic admin logon for persistence.
 references:

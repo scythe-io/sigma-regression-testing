@@ -1,5 +1,5 @@
 title: MedusaLocker Ransomware Registry Persistence
-id: cbb30fd3-b91a-4814-b79a-55e020393203
+id: 1e3fff60-dcb3-48a6-8faf-a316bf98405e
 status: experimental
 description: Detects registry modifications associated with MedusaLocker ransomware, including Run key persistence using the MSFEEditor name and enabling link connections to facilitate network share encryption.
 references:

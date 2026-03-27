@@ -1,5 +1,5 @@
-title: ALPHV BlackCat VM and Shadow Copy Deletion Commands
-id: c8b86c71-f113-493c-8624-1052f7b94550
+title: ALPHV BlackCat VM and Shadow Copy Deletion Commands (Sysmon)
+id: 74df2790-9c13-41ad-b483-a44958bc5fa6
 status: experimental
 description: Detects command execution patterns associated with ALPHV/BlackCat ransomware targeting virtualization infrastructure. This includes ESXi VM process termination, snapshot removal, Volume Shadow Copy deletion, and Windows Event Log clearing to maximize impact and hinder recovery.
 references:
