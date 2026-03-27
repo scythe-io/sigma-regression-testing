@@ -159,14 +159,14 @@ sigma check sigma_rules/*.yml
 
 **Expected output (success):**
 ```
-Checking 141 rules...
+Checking 140 rules...
 
-No issues found in 141 rules.
+No issues found in 140 rules.
 ```
 
 **Expected output (with errors):**
 ```
-Checking 141 rules...
+Checking 140 rules...
 
 sigma_rules/proc_creation_win_bad_rule.yml:
   - error: Missing required field 'logsource'

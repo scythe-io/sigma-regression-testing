@@ -8,8 +8,8 @@ This is a collection of **detection rules** that help security teams find hacker
 
 The rules are written in **Sigma**, which is like a universal language for detection rules. The advantage is that you write the rule once, and it can be translated to work with whatever security tool your company uses - Splunk, Elastic, Microsoft Sentinel, etc.
 
-Currently there are **141 rules** covering:
-- **Windows** (95 rules) - detecting suspicious processes, registry changes, file activity, network connections, DNS queries, credential access, lateral movement, Kerberos attacks, WMI persistence, DLL hijacking, NTLM relay, network share enumeration, browser credential theft, and process injection
+Currently there are **140 rules** covering:
+- **Windows** (94 rules) - detecting suspicious processes, registry changes, file activity, network connections, DNS queries, credential access, lateral movement, Kerberos attacks, WMI persistence, DLL hijacking, NTLM relay, network share enumeration, browser credential theft, and process injection
 - **Linux** (17 rules) - detecting privilege escalation, backdoors, reconnaissance
 - **Microsoft 365/Cloud** (8 rules) - detecting mailbox tampering, suspicious SharePoint activity
 - **Azure** (4 rules) - detecting cloud resource modifications and firewall changes
@@ -48,12 +48,12 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 
 | Step | Status | What We Did |
 |------|--------|-------------|
-| **Rule Upload** | Tested | 141 Sigma rules across Windows, Linux, M365, and Azure |
+| **Rule Upload** | Tested | 140 Sigma rules across Windows, Linux, M365, and Azure |
 | **Validation** | Tested | All rules pass `sigma check` - no syntax errors |
 | **Conversion** | Tested | Ran `convert-to-splunk.py` to generate `savedsearches.conf` for Windows-compatible rules |
 | **Auto-Commit** | Tested | Workflow automatically commits `savedsearches.conf` to repo on rule changes |
 | **Push to Splunk** | Tested | Deployed saved searches to Splunk using `deploy-to-splunk.ps1` |
-| **Regression Testing** | Tested | 65 Atomic Red Team test mappings across process, file, network, registry, DNS, and WMI event types |
+| **Regression Testing** | Tested | 57 Atomic Red Team test mappings across process, file, network, registry, DNS, and WMI event types |
 
 ### Atomic Red Team Coverage
 

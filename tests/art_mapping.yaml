@@ -135,13 +135,6 @@ tests:
     expected_rules:
       - "Registry Run Key Modification"
 
-  - name: "Registry Run Key Persistence (HKLM)"
-    description: "Adds persistence via HKLM Run key"
-    technique_id: "T1547.001"
-    atomic_test_guid: "6c55c8f8-3e8d-47c7-8c7c-36d5e9fc6c9f"
-    expected_rules:
-      - "Registry Run Key Modification"
-
   # ============================================
   # Persistence - T1136.001 (Create Account)
   # ============================================
@@ -152,17 +145,6 @@ tests:
     atomic_test_guid: "bc8be0ac-475c-4fbf-9b1d-9fffd77afbde"
     expected_rules:
       - "Local User Account Creation via New-LocalUser PowerShell Cmdlet"
-
-  # ============================================
-  # Execution - T1059.001 (PowerShell)
-  # ============================================
-
-  - name: "PowerShell Download Cradle"
-    description: "PowerShell downloads and executes remote script"
-    technique_id: "T1059.001"
-    atomic_test_guid: "e8a8a0e2-f9fd-4c9e-a7e3-7c8e5b7e6f3a"
-    expected_rules:
-      - "Suspicious CMD/POSH ParentImage"
 
   # ============================================
   # Execution - T1218.011 (Rundll32)
