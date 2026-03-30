@@ -35,6 +35,11 @@ This project provides an automated pipeline for:
 │  Rules  │────►│  (CI)    │────►│   to    │────►│   to    │────►│  with   │
 │ (.yml)  │     │          │     │ Splunk  │     │ Splunk  │     │ Atomics │
 └─────────┘     └──────────┘     └─────────┘     └─────────┘     └─────────┘
+                     │           ▲
+                     └──────────►┘
+               validation success
+               auto-triggers Splunk
+               pipeline (workflow_run)
 ```
 
 ---
@@ -176,6 +181,10 @@ sigma_rules/proc_creation_win_bad_rule.yml:
 ```
 
 ### Step 2: Convert Rules to Splunk Format
+
+> **This step runs automatically in CI.** When you push changes to `sigma_rules/` and validation passes, the Splunk Detection Pipeline is triggered automatically via `workflow_run`. The converted `savedsearches.conf` is committed back to the repository without any manual action.
+>
+> Run the commands below locally to preview or debug conversion output.
 
 The conversion script transforms Sigma YAML rules into Splunk's `savedsearches.conf` format.
 

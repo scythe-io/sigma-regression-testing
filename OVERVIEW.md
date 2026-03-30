@@ -21,21 +21,24 @@ Currently there are **140 rules** covering:
 There are 3 automated pipelines that run in GitHub when code changes:
 
 ### 1. Validation Workflow (`sigma-validate.yml`)
-**Purpose:** Quality control - makes sure rules are properly formatted before they're accepted.
+**Purpose:** Quality control — makes sure rules are properly formatted before they're accepted. **Also acts as the gate that triggers conversion.**
 
 **How it works:**
-- When someone submits a new rule (via pull request), GitHub automatically checks it
-- If the rule has errors (typos, missing fields, bad syntax), the submission is blocked
-- If the rule passes, it gets a green checkmark and can be merged
+- When someone pushes a rule change to `main` or submits a pull request, GitHub automatically runs `sigma check` on every rule
+- If any rule has errors (typos, missing fields, bad syntax), the workflow fails and the submission is blocked
+- If all rules pass, the workflow succeeds — and on `main`, this automatically kicks off the Splunk pipeline
+- Also auto-updates README rule counts and packages the rules as a downloadable artifact
 
 ### 2. Splunk Pipeline (`splunk-pipeline.yml`)
-**Purpose:** Converts rules to Splunk format, commits results, and optionally deploys them.
+**Purpose:** Converts validated rules to Splunk format, commits results, and optionally deploys them.
 
 **How it works:**
+- **Triggered automatically** when Sigma validation passes on `main` — no manual action needed
 - Takes the Sigma rules and translates them into Splunk's "saved searches" format
 - **Automatically commits** the generated `savedsearches.conf` back to the repository
 - Can automatically push those searches to your Splunk server (if secrets configured)
 - Can also run automated tests to verify the rules actually detect attacks
+- Can be triggered manually with optional deploy and regression test flags
 
 ### 3. Deployment Workflow (`deploy-rules.yml`)
 **Purpose:** (Work in progress) Will push rules to endpoints running detection tools.
@@ -158,18 +161,19 @@ pip install argcomplete
 │   ┌─────────────────────────────────────────────────────────────────────┐    │
 │   │  sigma-validate.yml                                                  │    │
 │   │  ─────────────────                                                   │    │
-│   │  Trigger: Every push/PR                                              │    │
+│   │  Trigger: Every push/PR to sigma_rules/**                            │    │
 │   │                                                                      │    │
 │   │  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────┐   │    │
-│   │  │ sigma check  │───►│  Pass/Fail   │───►│ Package rules as     │   │    │
-│   │  │ (validate)   │    │  PR gates    │    │ downloadable artifact│   │    │
+│   │  │ sigma check  │───►│  Pass/Fail   │───►│ Package artifact +   │   │    │
+│   │  │ (validate)   │    │  PR gates    │    │ update README stats  │   │    │
 │   │  └──────────────┘    └──────────────┘    └──────────────────────┘   │    │
-│   └─────────────────────────────────────────────────────────────────────┘    │
-│                                                                               │
+│   └──────────────────────────────────┬──────────────────────────────────┘    │
+│                                      │ on success (main only)                │
+│                                      ▼ workflow_run trigger                  │
 │   ┌─────────────────────────────────────────────────────────────────────┐    │
 │   │  splunk-pipeline.yml                                                 │    │
 │   │  ───────────────────                                                 │    │
-│   │  Trigger: Merge to main / Manual                                     │    │
+│   │  Trigger: Auto (after validation passes) / Manual                    │    │
 │   │                                                                      │    │
 │   │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌─────────────────┐   │    │
 │   │  │   Convert    │───►│ Auto-commit  │───►│   Deploy     │───►│ Regression Test │   │    │
@@ -247,25 +251,25 @@ pip install argcomplete
   │  Rules  │─────►│  (CI)    │─────►│   to    │─────►│   to    │─────►│  with   │
   │ (.yml)  │      │          │      │ Splunk  │      │ Splunk  │      │ Atomics │
   └─────────┘      └──────────┘      └─────────┘      └─────────┘      └─────────┘
-                        │                 │                │
-                        ▼                 ▼                ▼
-                   sigma check     convert-to-       deploy-to-
-                   (GitHub)        splunk.py         splunk.ps1
-                                        │
-                                        ▼
-                                  Auto-commit
-                                  to repo
-                                        │
-                                        ▼
-                                                   ┌─────────────┐
-                                                   │   SPLUNK    │
-                                                   │   SERVER    │
-                                                   │  ┌───────┐  │
-                                                   │  │Saved  │  │
-                                                   │  │Search │  │
-                                                   │  │ x 97  │  │
-                                                   │  └───────┘  │
-                                                   └─────────────┘
+                        │            ▲    │                │
+                        ▼            │    ▼                ▼
+                   sigma check  auto-  convert-to-    deploy-to-
+                   (GitHub)   trigger  splunk.py      splunk.ps1
+                                  │        │
+                              workflow     ▼
+                               _run   Auto-commit
+                              event   to repo
+                                             │
+                                             ▼
+                                        ┌─────────────┐
+                                        │   SPLUNK    │
+                                        │   SERVER    │
+                                        │  ┌───────┐  │
+                                        │  │Saved  │  │
+                                        │  │Search │  │
+                                        │  │ x 106 │  │
+                                        │  └───────┘  │
+                                        └─────────────┘
 ```
 
 ---

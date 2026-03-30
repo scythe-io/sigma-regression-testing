@@ -130,7 +130,7 @@ This repository includes GitHub Actions workflows for automated validation and d
 
 ### Validation Workflow (`sigma-validate.yml`)
 
-Automatically validates rules on every code change.
+Automatically validates rules on every code change. **When validation passes on `main`, it automatically triggers the Splunk Detection Pipeline.**
 
 **Triggers:**
 - Push to `main` branch (when `sigma_rules/**` changes)
@@ -145,18 +145,25 @@ Automatically validates rules on every code change.
 ├─────────────────────────────────────────────────────────────┤
 │  1. Checkout code                                           │
 │  2. Install Python 3.11 + sigma-cli                         │
-│  3. Run: sigma check sigma_rules/*.yml                     │
+│  3. Run: sigma check sigma_rules/*.yml                      │
 │  4. If errors found → FAIL (blocks PR merge)                │
 │  5. If clean → PASS and display rule count                  │
 └─────────────────────────────────────────────────────────────┘
-                          │
-                          ▼ (only on merge to main)
+         │                        │
+         ▼ (only on merge)        ▼ (only on merge)
+┌──────────────────┐   ┌──────────────────────────────────────┐
+│  RELEASE JOB     │   │  UPDATE README JOB                   │
+├──────────────────┤   ├──────────────────────────────────────┤
+│  Package .yml    │   │  Run update-readme-stats.py          │
+│  rules as        │   │  Auto-commit updated rule counts     │
+│  artifact        │   │  to README.md                        │
+└──────────────────┘   └──────────────────────────────────────┘
+         │
+         │  on completion with conclusion == 'success'
+         ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  RELEASE JOB                                                │
-├─────────────────────────────────────────────────────────────┤
-│  1. Package all .yml rules                                  │
-│  2. Upload as downloadable artifact (90 day retention)      │
-│  3. Create summary with commit and rule count               │
+│  SPLUNK DETECTION PIPELINE (auto-triggered)                 │
+│  see below ↓                                                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -170,20 +177,26 @@ Template for deploying validated rules to endpoints. Supports Azure Blob, AWS S3
 
 A complete detection engineering pipeline for deploying Sigma rules to Splunk and validating them with [Atomic Red Team](https://atomicredteam.io/) tests.
 
+**Trigger:** Automatically runs after `Sigma Rules Validation` succeeds on `main`. Can also be triggered manually with optional deploy/regression flags.
+
 ### Pipeline Overview
 
 ```text
+         ┌──────────────────────────────────┐
+         │   Sigma Rules Validation (pass)  │
+         └────────────────┬─────────────────┘
+                          │ workflow_run trigger
+                          ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  CONVERT JOB                                                │
 ├─────────────────────────────────────────────────────────────┤
-│  1. Validate Sigma rules                                    │
-│  2. Convert Windows rules to Splunk savedsearches.conf      │
-│  3. Generate conversion report                              │
-│  4. Commit savedsearches.conf back to repository            │
-│  5. Upload artifacts                                        │
+│  1. Convert Windows rules to Splunk savedsearches.conf      │
+│  2. Generate conversion report                              │
+│  3. Commit savedsearches.conf back to repository            │
+│  4. Upload artifacts                                        │
 └─────────────────────────────────────────────────────────────┘
                           │
-                          ▼ (on merge to main or manual trigger)
+                          ▼ (on workflow_run or manual deploy)
 ┌─────────────────────────────────────────────────────────────┐
 │  DEPLOY JOB (requires secrets configured)                   │
 ├─────────────────────────────────────────────────────────────┤
@@ -202,7 +215,7 @@ A complete detection engineering pipeline for deploying Sigma rules to Splunk an
 └─────────────────────────────────────────────────────────────┘
 ```
 
-> **Note:** The `savedsearches.conf` file is automatically regenerated and committed to the repository whenever Sigma rules change. You can always find the latest converted rules in `splunk_output/savedsearches.conf`.
+> **Note:** The `savedsearches.conf` file is automatically regenerated and committed to the repository whenever Sigma rules change and pass validation. You can always find the latest converted rules in `splunk_output/savedsearches.conf`.
 
 ### Local Usage
 
@@ -406,7 +419,9 @@ Get-Command Invoke-AtomicTest
 
 ### GitHub Actions Setup
 
-To enable automated deployment, configure these secrets in your repository:
+**Conversion is fully automatic** — push changes to `sigma_rules/`, validation runs, and if it passes the Splunk pipeline triggers automatically to regenerate and commit `savedsearches.conf`. No manual steps required.
+
+To also enable automated **deployment** to a live Splunk instance, configure these secrets in your repository:
 
 | Secret | Description |
 |--------|-------------|
