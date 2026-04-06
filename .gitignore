@@ -3,6 +3,9 @@ splunk_output/*
 !splunk_output/savedsearches.conf
 !splunk_output/conversion_report.json
 test_results.json
+test_results.html
+image_examples/*
+
 
 # Python
 __pycache__/
@@ -30,3 +33,6 @@ Thumbs.db
 
 # Claude Code
 .claude/
+
+# Powerpoint
+*.pptx
