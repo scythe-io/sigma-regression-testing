@@ -29,24 +29,24 @@ pip install -r requirements.txt
 | `file_event` | File system activity | 11 |
 | `m365_*` | Microsoft 365 audit logs | 5 |
 | `net_connection` | Network connections | 4 |
+| `registry_set` | Registry modifications | 4 |
 | `reg_set` | Registry modifications | 4 |
-| `registry_set` | Other events | 4 |
-| `sysmon_lockbitv3` | Other events | 3 |
+| `sysmon_lockbitv3` | LockBit 3.0 ransomware detection (Sysmon) | 3 |
+| `azure_network` | Azure network firewall changes | 2 |
+| `sysmon_ALPHVblackcat` | ALPHV BlackCat ransomware detection (Sysmon) | 2 |
 | `web_sharepoint` | SharePoint web activity | 2 |
-| `sysmon_ALPHVblackcat` | Other events | 2 |
-| `azure_network` | Other events | 2 |
-| `dns_query` | Other events | 1 |
-| `azure_firewall` | Other events | 1 |
-| `sysmon_medusa` | Other events | 1 |
-| `azure_application` | Other events | 1 |
-| `wmi_event` | Other events | 1 |
-| `sysmon_RAS` | Other events | 1 |
+| `azure_application` | Azure application security changes | 1 |
+| `azure_firewall` | Azure firewall modifications | 1 |
+| `bitsadmin_mal` | Malicious BITSAdmin activity | 1 |
+| `dns_query` | DNS query anomalies | 1 |
 | `file_creation` | File creation events | 1 |
-| `bitsadmin_mal` | Other events | 1 |
-| `posh_ps` | Other events | 1 |
-| `powershell_base64` | Other events | 1 |
-| `sysmon_netconnect` | Other events | 1 |
-| `security_*` | Security event logs | 1 |
+| `posh_ps` | PowerShell script block logging | 1 |
+| `powershell_base64` | Base64-encoded PowerShell detection | 1 |
+| `security_*` | Windows Security event logs | 1 |
+| `sysmon_medusa` | Medusa ransomware detection (Sysmon) | 1 |
+| `sysmon_netconnect` | Suspicious network connections (Sysmon) | 1 |
+| `sysmon_RAS` | Remote access software detection (Sysmon) | 1 |
+| `wmi_event` | WMI event subscription monitoring | 1 |
 
 ## Rule Design Philosophy
 

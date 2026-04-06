@@ -164,20 +164,21 @@ sigma check sigma_rules/*.yml
 
 **Expected output (success):**
 ```
-Checking 140 rules...
+Checking 140 rules…
 
 No issues found in 140 rules.
+
 ```
 
 **Expected output (with errors):**
 ```
-Checking 140 rules...
+Checking 140 rules…
 
 sigma_rules/proc_creation_win_bad_rule.yml:
   - error: Missing required field 'logsource'
   - warning: No 'falsepositives' field defined
 
-1 rule with errors, 131 rules OK
+1 rule with errors, 139 rules OK
 ```
 
 ### Step 2: Convert Rules to Splunk Format
@@ -195,7 +196,7 @@ python scripts/convert-to-splunk.py --list-compatible
 
 **Expected output:**
 ```
-Compatible Windows rules found: ~97
+Compatible Windows rules found: ~112
 
 Rules that will be converted:
   1. proc_creation_win_conti_ransomware.yml
@@ -224,12 +225,12 @@ Processing Windows rules from sigma_rules...
 
 Conversion Summary
 ==================
-Total rules processed: ~97
-Successfully converted: ~97
+Total rules processed: ~112
+Successfully converted: ~112
 Failed conversions: 0
 
 Output files:
-  - splunk_output/savedsearches.conf (~97 searches)
+  - splunk_output/savedsearches.conf (~112 searches)
   - splunk_output/conversion_report.json
 ```
 
@@ -242,7 +243,7 @@ head -30 splunk_output/savedsearches.conf
 ```conf
 # Sigma Rules - Converted to Splunk Saved Searches
 # Generated: 2026-01-27T10:30:00
-# Total searches: ~80
+# Total searches: ~112
 
 [Conti Ransomware Discovery Commands]
 description = Detects commands commonly used by Conti ransomware for system discovery
@@ -268,7 +269,7 @@ Splunk Saved Search Deployment
 ============================================================
 
 Parsing splunk_output/savedsearches.conf...
-Found 106 saved searches
+Found 112 saved searches
 
 [DRY RUN] Would deploy the following searches:
   - Conti Ransomware Discovery Commands
@@ -296,7 +297,7 @@ Splunk Saved Search Deployment
 ============================================================
 
 Parsing splunk_output/savedsearches.conf...
-Found 106 saved searches
+Found 112 saved searches
 
 Authenticating with Splunk at splunk.yourcompany.com:8089...
 Authentication successful
@@ -312,7 +313,7 @@ Deploying: Windows Event Log Manipulation via PowerShell... CREATED
 ============================================================
 Deployment Summary
 ============================================================
-Created: 97
+Created: 112
 Updated: 0
 Failed:  0
 
@@ -330,7 +331,7 @@ Deploying: Domain Discovery via NET Command... UPDATED
 Deployment Summary
 ============================================================
 Created: 0
-Updated: 97
+Updated: 112
 Failed:  0
 ```
 
