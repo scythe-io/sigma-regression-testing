@@ -382,10 +382,25 @@ class RegressionTestGUI:
         self.stop_btn.config(state="disabled")
         if rc is None:
             self.status_var.set("Stopped.")
+            return
         elif rc == 0:
-            self.status_var.set("Finished — check output above.")
+            self.status_var.set("Finished — all done.")
+            self._append("\n✔  Run complete.\n", "pass")
         else:
             self.status_var.set(f"Finished with exit code {rc}.")
+            self._append(f"\n✘  Run finished with exit code {rc}.\n", "fail")
+
+        # Offer to open the output file if one was specified and exists
+        out = self.output_file.get().strip()
+        if out:
+            out_path = Path(__file__).parent.parent / out
+            if out_path.exists():
+                if messagebox.askyesno(
+                    "Run complete",
+                    f"Tests finished.\n\nOpen output file?\n{out_path}",
+                ):
+                    import os as _os
+                    _os.startfile(str(out_path))
 
     # ── Output rendering ──────────────────────────────────────────────────────
 
@@ -433,4 +448,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        import tkinter as _tk
+        from tkinter import messagebox as _mb
+        _r = _tk.Tk()
+        _r.withdraw()
+        _mb.showerror("Startup error", str(exc))
+        _r.destroy()
+        raise

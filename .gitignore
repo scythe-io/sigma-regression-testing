@@ -34,5 +34,8 @@ Thumbs.db
 # Claude Code
 .claude/
 
+# GUI saved settings
+.gui_config.json
+
 # Powerpoint
 *.pptx
