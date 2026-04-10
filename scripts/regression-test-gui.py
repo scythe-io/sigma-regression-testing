@@ -74,6 +74,11 @@ class RegressionTestGUI:
         ttk.Label(ctrl, textvariable=self.status_var, foreground="#555").grid(
             row=0, column=4, padx=(12, 0), sticky="e")
 
+        # ── Progress bar (hidden until running) ──
+        self.progress = ttk.Progressbar(ctrl, mode="indeterminate", length=200)
+        self.progress.grid(row=0, column=5, padx=(16, 0), sticky="e")
+        self.progress.grid_remove()
+
         # ── Bottom: output ──
         out_frame = ttk.LabelFrame(self.root, text="Output", padding=6)
         out_frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=(4, 10))
@@ -339,25 +344,39 @@ class RegressionTestGUI:
             return
 
         self._clear_output()
-        # Show the command being run
-        display_cmd = " ".join(
-            f'"{a}"' if " " in a else a for a in cmd
-        )
-        self._append(f"$ {display_cmd}\n\n", "cmd")
+
+        # Show the command with passwords masked
+        _password_flags = {"--splunk-pass", "--winrm-pass"}
+        masked = []
+        skip_next = False
+        for token in cmd:
+            if skip_next:
+                masked.append("***")
+                skip_next = False
+            elif token in _password_flags:
+                masked.append(token)
+                skip_next = True
+            else:
+                masked.append(f'"{token}"' if " " in token else token)
+        self._append("$ " + " ".join(masked) + "\n\n", "cmd")
 
         self.run_btn.config(state="disabled")
         self.stop_btn.config(state="normal")
-        self.status_var.set("Running…")
+        self.status_var.set("** TEST RUNNING **")
+        self.progress.grid()
+        self.progress.start(12)
         self._save()
 
         def worker():
             try:
+                env = {**os.environ, "PYTHONUNBUFFERED": "1"}
                 self.process = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
                     bufsize=1,
+                    env=env,
                     cwd=str(Path(__file__).parent.parent),
                 )
                 for line in self.process.stdout:
@@ -375,11 +394,15 @@ class RegressionTestGUI:
         if self.process and self.process.poll() is None:
             self.process.terminate()
             self._append("\n[Stopped by user]\n", "warn")
+        self.progress.stop()
+        self.progress.grid_remove()
         self._done(None)
 
     def _done(self, rc):
         self.run_btn.config(state="normal")
         self.stop_btn.config(state="disabled")
+        self.progress.stop()
+        self.progress.grid_remove()
         if rc is None:
             self.status_var.set("Stopped.")
             return
@@ -390,17 +413,16 @@ class RegressionTestGUI:
             self.status_var.set(f"Finished with exit code {rc}.")
             self._append(f"\n✘  Run finished with exit code {rc}.\n", "fail")
 
-        # Offer to open the output file if one was specified and exists
+        # Offer to open the HTML results file
         out = self.output_file.get().strip()
         if out:
-            out_path = Path(__file__).parent.parent / out
-            if out_path.exists():
+            html_path = Path(__file__).parent.parent / Path(out).with_suffix(".html")
+            if html_path.exists():
                 if messagebox.askyesno(
                     "Run complete",
-                    f"Tests finished.\n\nOpen output file?\n{out_path}",
+                    f"Tests finished.\n\nOpen HTML results?\n{html_path}",
                 ):
-                    import os as _os
-                    _os.startfile(str(out_path))
+                    os.startfile(str(html_path))
 
     # ── Output rendering ──────────────────────────────────────────────────────
 
