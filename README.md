@@ -98,10 +98,11 @@ sigma convert -t microsoft365defender sigma_rules/*.yml
 │   ├── m365_*.yml             # Microsoft 365 rules
 │   └── unmapped_rules/        # Rules without ART test mappings (not yet QA-validated)
 ├── scripts/
-│   ├── update-readme-stats.py # Auto-update README statistics
-│   ├── convert-to-splunk.py   # Convert rules to Splunk format
-│   ├── deploy-to-splunk.ps1   # Deploy saved searches to Splunk
-│   └── regression-test.py     # Atomic Red Team regression testing
+│   ├── update-readme-stats.py    # Auto-update README statistics
+│   ├── convert-to-splunk.py      # Convert rules to Splunk format
+│   ├── deploy-to-splunk.ps1      # Deploy saved searches to Splunk
+│   ├── regression-test.py        # Atomic Red Team regression testing (CLI)
+│   └── regression-test-gui.py    # GUI wrapper for regression-test.py
 ├── tests/
 │   └── art_mapping.yaml       # Atomic Red Team test to rule mappings
 ├── splunk_output/             # Generated Splunk artifacts (auto-updated)
@@ -280,6 +281,16 @@ python scripts/regression-test.py \
   --skip-atomic-check \
   --parallel
 ```
+
+**GUI Mode:**
+
+A graphical interface is also available for configuring and running tests without building CLI commands by hand:
+
+```bash
+python scripts/regression-test-gui.py
+```
+
+The GUI provides four tabs (Splunk, Target, Test Settings, Filters), a live color-coded output panel, a **Test Connection** button to verify Splunk credentials, and a prompt to open the HTML results when the run completes. Settings are saved automatically to `.gui_config.json`.
 
 **Test Output:**
 

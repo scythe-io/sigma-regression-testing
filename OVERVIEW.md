@@ -280,7 +280,8 @@ pip install argcomplete
 |--------|----------|---------|
 | `convert-to-splunk.py` | Python | Converts Sigma YAML rules to Splunk `savedsearches.conf` format |
 | `deploy-to-splunk.ps1` | PowerShell | Deploys saved searches to Splunk via REST API |
-| `regression-test.py` | Python | Runs Atomic Red Team tests, validates Splunk detections, generates JSON and HTML reports |
+| `regression-test.py` | Python | Runs Atomic Red Team tests, validates Splunk detections, generates JSON and HTML reports (CLI) |
+| `regression-test-gui.py` | Python | GUI wrapper for `regression-test.py` — tabbed settings, live output panel, Test Connection button |
 | `update-readme-stats.py` | Python | Updates README.md with current rule counts |
 | `Enable-TabCompletion.ps1` | PowerShell | Enables tab completion for regression-test.py in PowerShell |
 

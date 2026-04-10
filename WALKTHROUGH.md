@@ -345,6 +345,28 @@ Failed:  0
 
 The regression test script executes Atomic Red Team attacks on a test endpoint and verifies the Splunk rules detect them.
 
+#### Option A: GUI (recommended for interactive use)
+
+```bash
+python scripts/regression-test-gui.py
+```
+
+This opens a settings window with four tabs:
+
+| Tab | Fields |
+|-----|--------|
+| **Splunk** | Host, Mgmt Port (8089), Web Port (8000), App, Username, Password + **Test Connection** button |
+| **Target** | Target IP, WinRM Username, WinRM Password |
+| **Test Settings** | Test config file, output file, wait time, lookback window, execution flags (parallel/batch/dry-run) |
+| **Filters** | Technique IDs, expected rule names, atomic GUIDs (one per line) |
+
+- Settings auto-save to `.gui_config.json` on each run
+- The output panel shows live color-coded results as tests execute
+- Hit **Test Connection** in the Splunk tab to verify credentials before running
+- When the run completes a prompt offers to open the HTML results file
+
+#### Option B: CLI
+
 **Command (dry run - shows test plan without executing):**
 ```bash
 python scripts/regression-test.py \
