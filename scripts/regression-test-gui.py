@@ -286,11 +286,11 @@ class RegressionTestGUI:
         def req(flag, val, name):
             if not val.strip():
                 raise ValueError(f"{name} is required.")
-            cmd += [flag, val.strip()]
+            cmd.extend([flag, val.strip()])
 
         def opt(flag, val):
             if val.strip():
-                cmd += [flag, val.strip()]
+                cmd.extend([flag, val.strip()])
 
         if not self.flag_dry_run.get():
             req("--splunk-host", self.splunk_host.get(), "Splunk Host")
