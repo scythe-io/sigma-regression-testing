@@ -1,23 +1,29 @@
 title: Kerberoasting via Invoke-Kerberoast PowerShell
 id: 9d0e1f2a-3b4c-5d6e-7f8a-9b0c1d2e3f4a
 status: test
-description: Detects execution of Invoke-Kerberoast from Empire or PowerSploit frameworks, which requests Kerberos service tickets for accounts with SPNs, enabling offline hash cracking.
+description: >
+    Detects execution of Invoke-Kerberoast from Empire or PowerSploit frameworks, which requests
+    Kerberos service tickets for accounts with SPNs, enabling offline hash cracking.
+    Detected via PowerShell Script Block Logging (EID 4104) since the module is typically
+    invoked via encoded commands (e.g., WinRM) where the cmdlet name never appears in
+    Sysmon process CommandLine.
 references:
     - https://attack.mitre.org/techniques/T1558/003/
     - https://github.com/EmpireProject/Empire/blob/master/data/module_source/credentials/Invoke-Kerberoast.ps1
     - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1558.003/T1558.003.yaml
 author: Sigma Community
 date: 2024-01-15
-modified: 2024-01-15
+modified: 2026-04-10
 tags:
     - attack.credential-access
     - attack.t1558.003
 logsource:
-    category: process_creation
     product: windows
+    category: ps_script
+    definition: 'Requirements: Script Block Logging must be enabled'
 detection:
     selection:
-        CommandLine|contains:
+        ScriptBlockText|contains:
             - 'Invoke-Kerberoast'
             - 'Get-DomainSPNTicket'
             - 'Request-SPNTicket'

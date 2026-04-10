@@ -86,6 +86,12 @@ winrm set winrm/config/service/auth '@{Basic="true"}'
 winrm set winrm/config/service '@{AllowUnencrypted="true"}'
 ```
 
+> **Note for parallel test execution:** When using `--parallel`, the regression test opens multiple concurrent WinRM sessions. WinRM defaults to a maximum of 5 shells per user. To increase this limit:
+> ```powershell
+> winrm set winrm/config/winrs '@{MaxShellsPerUser="25"}'
+> ```
+> The default concurrency in the regression test is 5, which works with the WinRM default. Increase `MaxShellsPerUser` if you raise the worker count.
+
 3. **Install and Configure Sysmon:**
 
 ```powershell
@@ -456,10 +462,28 @@ python scripts/regression-test.py \
   --winrm-user "YOURDOM\Administrator" \
   --winrm-pass "YourPassword123!" \
   --test-config tests/art_mapping.yaml \
-  --wait-time 90 \
+  --wait-time 600 \
+  --lookback-window 60 \
   --skip-atomic-check \
   --batch
 ```
+
+**Parallel mode (fastest — runs all atomics concurrently, 5 at a time):**
+```bash
+python scripts/regression-test.py \
+  --splunk-host splunk.yourcompany.com \
+  --splunk-user admin \
+  --target 192.168.1.100 \
+  --winrm-user "YOURDOM\Administrator" \
+  --winrm-pass "YourPassword123!" \
+  --test-config tests/art_mapping.yaml \
+  --wait-time 600 \
+  --lookback-window 60 \
+  --skip-atomic-check \
+  --parallel
+```
+
+> `--parallel` implies `--batch`. Use `--lookback-window` (minutes) to control how far back Splunk searches — set it large enough to cover the full test window including ingestion delay. If omitted, the window is auto-calculated from when the first test started.
 
 **List available tests:**
 

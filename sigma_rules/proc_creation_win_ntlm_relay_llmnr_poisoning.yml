@@ -3,10 +3,9 @@ id: deecd55f-afe0-4a62-9fba-4d1ba2deb321
 status: test
 description: >
     Detects execution of tools commonly used for LLMNR/NBT-NS poisoning and NTLM relay attacks,
-    including Responder, Inveigh, and related utilities. These tools respond to broadcast name
-    resolution requests to capture Net-NTLMv2 hashes or relay credentials to other services.
-    The detection covers PowerShell-based invocation of Inveigh (via IEX download) and
-    process names associated with Responder.
+    including Responder and Inveigh. Detected via PowerShell Script Block Logging (EID 4104)
+    since Inveigh is typically invoked via encoded PowerShell (e.g., WinRM IEX download cradle)
+    where cmdlet names never appear in Sysmon process CommandLine.
 references:
     - https://attack.mitre.org/techniques/T1557/001/
     - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1557.001/T1557.001.yaml
@@ -14,37 +13,22 @@ references:
     - https://github.com/lgandx/Responder
 author: Sigma Detection Engineering
 date: 2024-01-15
+modified: 2026-04-10
 tags:
     - attack.credential-access
     - attack.collection
     - attack.lateral-movement
     - attack.t1557.001
 logsource:
-    category: process_creation
     product: windows
+    category: ps_script
+    definition: 'Requirements: Script Block Logging must be enabled'
 detection:
-    selection_responder:
-        Image|endswith:
-            - '\Responder.exe'
-            - '\MultiRelay.exe'
-        Image|contains:
-            - 'Responder'
-    selection_inveigh_iex:
-        CommandLine|contains|all:
-            - 'Inveigh'
+    selection:
+        ScriptBlockText|contains:
             - 'Invoke-Inveigh'
-    selection_inveigh_args:
-        CommandLine|contains:
-            - 'Invoke-Inveigh'
-            - '-NBNS Y'
-            - '-MDNS Y'
-            - '-LLMNR Y'
-    selection_powershell_inveigh:
-        Image|endswith:
-            - '\powershell.exe'
-            - '\pwsh.exe'
-        CommandLine|contains: 'Inveigh'
-    condition: selection_responder or selection_inveigh_iex or (selection_inveigh_args) or selection_powershell_inveigh
+            - 'Invoke-Responder'
+    condition: selection
 falsepositives:
     - Authorized penetration testing activities
     - Red team exercises using these tools with prior approval

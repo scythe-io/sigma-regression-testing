@@ -1,34 +1,34 @@
 title: Access Token Manipulation via Get-System PowerShell
 id: 8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d
 status: test
-description: Detects use of PowerShell Empire's Get-System module which performs access token manipulation via named pipe impersonation or token duplication to escalate to SYSTEM privileges.
+description: >
+    Detects use of PowerShell Empire's Get-System module which performs access token manipulation
+    via named pipe impersonation or token duplication to escalate to SYSTEM privileges.
+    Detected via PowerShell Script Block Logging (EID 4104) since the module is typically
+    invoked via encoded commands (e.g., WinRM) where the cmdlet name never appears in
+    Sysmon process CommandLine.
 references:
     - https://attack.mitre.org/techniques/T1134/001/
     - https://github.com/BC-SECURITY/Empire/blob/master/data/module_source/privesc/Get-System.ps1
     - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1134.001/T1134.001.yaml
 author: Sigma Community
 date: 2024-01-15
-modified: 2024-01-15
+modified: 2026-04-10
 tags:
     - attack.privilege-escalation
     - attack.defense-evasion
     - attack.t1134
     - attack.t1134.001
 logsource:
-    category: process_creation
     product: windows
+    category: ps_script
+    definition: 'Requirements: Script Block Logging must be enabled'
 detection:
-    selection_getsystem:
-        CommandLine|contains:
+    selection:
+        ScriptBlockText|contains:
             - 'Get-System'
-    selection_technique:
-        CommandLine|contains:
-            - '-Technique NamedPipe'
-            - '-Technique Token'
-            - '-Technique RPCSS'
-    selection_empire:
-        CommandLine|contains: 'Get-System.ps1'
-    condition: selection_getsystem or selection_empire or (selection_getsystem and selection_technique)
+            - 'Get-System.ps1'
+    condition: selection
 falsepositives:
     - Penetration testers using Empire framework
     - Authorized red team exercises

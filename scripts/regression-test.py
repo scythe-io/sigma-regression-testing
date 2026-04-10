@@ -35,6 +35,8 @@ import yaml
 import requests
 import urllib3
 import subprocess
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -974,10 +976,12 @@ def main():
     parser.add_argument('--winrm-pass', help='WinRM password for remote targets')
     parser.add_argument('--test-config', default='tests/art_mapping.yaml', help='Test mapping file')
     parser.add_argument('--output', default='test_results.json', help='Output report path')
-    parser.add_argument('--wait-time', type=int, default=60, help='Seconds to wait for log ingestion')
+    parser.add_argument('--wait-time', type=int, default=60, help='Seconds to wait after tests before querying Splunk')
+    parser.add_argument('--lookback-window', type=int, default=None, help='Minutes to look back in Splunk when querying (overrides auto-calculated window)')
     parser.add_argument('--dry-run', action='store_true', help='Show tests without executing')
     parser.add_argument('--skip-atomic-check', action='store_true', help='Skip Atomic RT install check')
     parser.add_argument('--batch', action='store_true', help='Run all atomics first, then check rules (faster)')
+    parser.add_argument('--parallel', action='store_true', help='Run atomic tests in parallel (implies --batch)')
     parser.add_argument('--test-id', action='append', help='Filter by atomic test GUID (can specify multiple)')
     parser.add_argument('--expected-rule', action='append', help='Filter by expected rule name (can specify multiple)')
     parser.add_argument('--technique', action='append', help='Filter by MITRE ATT&CK technique ID, e.g., T1018 (can specify multiple)')
@@ -1127,6 +1131,10 @@ def main():
     # Run tests
     results = []
 
+    # --parallel implies --batch
+    if args.parallel:
+        args.batch = True
+
     # If prompting for inputs, collect them upfront in batch mode
     if args.prompt_inputs and args.batch:
         print("\n[INPUT COLLECTION] Collecting input arguments for all tests...")
@@ -1137,34 +1145,75 @@ def main():
 
     if args.batch:
         # Batch mode: run all atomics first, then check rules
-        print("\n[BATCH MODE] Executing all atomic tests first...")
+        if args.parallel:
+            print("\n[BATCH MODE] Executing all atomic tests in parallel...")
+        else:
+            print("\n[BATCH MODE] Executing all atomic tests first...")
         print("="*60)
 
-        atomic_results = []
-        for i, test in enumerate(tests, 1):
-            print(f"\n[{i}/{len(tests)}] {test.name}")
-            print(f"    Technique: {test.technique_id}")
-            print(f"    Atomic GUID: {test.atomic_test_guid}")
+        batch_start_time = time.time()
+        print_lock = threading.Lock()
 
+        def run_one(index_test):
+            i, test = index_test
             result = runner.run_atomic(
                 test.technique_id,
                 test.atomic_test_guid,
                 test.input_arguments,
                 test.cleanup
             )
+            status = "Executed successfully" if result["success"] else f"FAILED - {result.get('error', 'Unknown error')}"
+            with print_lock:
+                print(f"[{i}/{len(tests)}] {test.name}")
+                print(f"    Technique: {test.technique_id}")
+                print(f"    Atomic GUID: {test.atomic_test_guid}")
+                print(f"    Status: {status}")
+            return (test, result)
 
-            if result["success"]:
-                print(f"    Status: Executed successfully")
-            else:
-                print(f"    Status: FAILED - {result.get('error', 'Unknown error')}")
-
-            atomic_results.append((test, result))
+        atomic_results = []
+        if args.parallel:
+            print(f"Launching {len(tests)} tests concurrently (max 5 parallel WinRM sessions)...")
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                futures = {executor.submit(run_one, (i, test)): i for i, test in enumerate(tests, 1)}
+                ordered = {}
+                for future in as_completed(futures):
+                    test, result = future.result()
+                    ordered[futures[future]] = (test, result)
+            # Preserve original test order
+            atomic_results = [ordered[i] for i in sorted(ordered)]
+        else:
+            for i, test in enumerate(tests, 1):
+                print(f"\n[{i}/{len(tests)}] {test.name}")
+                print(f"    Technique: {test.technique_id}")
+                print(f"    Atomic GUID: {test.atomic_test_guid}")
+                result = runner.run_atomic(
+                    test.technique_id,
+                    test.atomic_test_guid,
+                    test.input_arguments,
+                    test.cleanup
+                )
+                if result["success"]:
+                    print(f"    Status: Executed successfully")
+                else:
+                    print(f"    Status: FAILED - {result.get('error', 'Unknown error')}")
+                atomic_results.append((test, result))
 
         # Wait for log ingestion
         print(f"\n{'='*60}")
         print(f"All atomics executed. Waiting {args.wait_time}s for log ingestion...")
         print("="*60)
         time.sleep(args.wait_time)
+
+        # Calculate query lookback window
+        if args.lookback_window:
+            # User-specified lookback in minutes
+            query_earliest = f"-{args.lookback_window}m"
+            print(f"\nUsing lookback window: {args.lookback_window} minutes")
+        else:
+            # Auto-calculate: time since first test started + 120s buffer
+            elapsed = int(time.time() - batch_start_time)
+            query_earliest = f"-{elapsed + 120}s"
+            print(f"\nAuto lookback window: {elapsed + 120}s (elapsed: {elapsed}s)")
 
         # Check rules for all tests
         print("\n[BATCH MODE] Checking Splunk for detections...")
@@ -1178,13 +1227,13 @@ def main():
             error = atomic_result.get('error') if not atomic_result['success'] else None
 
             # Check for triggered rules
-            all_alerts = splunk.get_triggered_alerts(earliest=f"-{args.wait_time + 120}s")
+            all_alerts = splunk.get_triggered_alerts(earliest=query_earliest)
             triggered_rules = [r for r in all_alerts if r in test.expected_rules]
 
             # Also run each expected saved search directly
             for rule_name in test.expected_rules:
                 if rule_name not in triggered_rules:
-                    count = splunk.search_saved_search(rule_name, earliest=f"-{args.wait_time + 120}s")
+                    count = splunk.search_saved_search(rule_name, earliest=query_earliest)
                     if count > 0:
                         triggered_rules.append(rule_name)
                         print(f"    [+] {rule_name}: {count} matches")
