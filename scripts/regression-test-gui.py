@@ -138,6 +138,9 @@ class RegressionTestGUI:
         self.splunk_app.set("search")
         self.splunk_user.set("admin")
 
+        ttk.Button(f, text="Test Connection", command=self._test_splunk).grid(
+            row=4, column=0, columnspan=2, sticky="w", padx=8, pady=(10, 0))
+
     def _build_target_tab(self, nb):
         f = ttk.Frame(nb, padding=10)
         nb.add(f, text="  Target  ")
@@ -347,6 +350,41 @@ class RegressionTestGUI:
 
     # ── Execution ─────────────────────────────────────────────────────────────
 
+    def _test_splunk(self):
+        """Quick auth test against Splunk REST API — runs in background thread."""
+        host = self.splunk_host.get().strip()
+        port = self.splunk_port.get().strip() or "8089"
+        user = self.splunk_user.get().strip()
+        password = self.splunk_pass.get().strip()
+        if not host or not password:
+            messagebox.showerror("Missing fields", "Splunk Host and Password are required.")
+            return
+
+        self._append(f"Testing connection to https://{host}:{port} as {user}…\n", "info")
+
+        def _do_test():
+            try:
+                import requests, urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                url = f"https://{host}:{port}/services/search/jobs"
+                r = requests.post(url, data={"search": "search index=_internal | head 1",
+                                             "output_mode": "json"},
+                                  auth=(user, password), verify=False, timeout=10)
+                if r.status_code == 201:
+                    self.root.after(0, self._append, "  Connection OK (HTTP 201)\n", "pass")
+                elif r.status_code == 401:
+                    self.root.after(0, self._append,
+                        f"  Auth FAILED (401) — wrong username/password for the REST API.\n"
+                        f"  Tip: verify with:  curl -k -u {user}:PASSWORD "
+                        f"https://{host}:{port}/services/search/jobs\n", "fail")
+                else:
+                    self.root.after(0, self._append,
+                        f"  Unexpected response: HTTP {r.status_code}\n  {r.text[:200]}\n", "warn")
+            except Exception as e:
+                self.root.after(0, self._append, f"  Error: {e}\n", "fail")
+
+        threading.Thread(target=_do_test, daemon=True).start()
+
     def _run(self):
         try:
             cmd, extra_env = self._build_cmd()
@@ -357,13 +395,13 @@ class RegressionTestGUI:
         self._clear_output()
 
         # Show the command — passwords travel via env vars so display those references
-        display_parts = []
+        env_prefix = ""
         if extra_env.get("SPLUNK_PASSWORD"):
-            display_parts.append("SPLUNK_PASSWORD=*** ")
+            env_prefix += "SPLUNK_PASSWORD=*** "
         if extra_env.get("WINRM_PASSWORD"):
-            display_parts.append("WINRM_PASSWORD=*** ")
-        display_parts += [f'"{t}"' if " " in t else t for t in cmd]
-        self._append("$ " + "".join(display_parts) + "\n\n", "cmd")
+            env_prefix += "WINRM_PASSWORD=*** "
+        cmd_display = " ".join(f'"{t}"' if " " in t else t for t in cmd)
+        self._append(f"$ {env_prefix}{cmd_display}\n\n", "cmd")
 
         self.run_btn.config(state="disabled")
         self.stop_btn.config(state="normal")
