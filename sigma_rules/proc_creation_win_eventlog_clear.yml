@@ -4,27 +4,26 @@ related:
     - id: 0f017df3-8f5a-414f-ad6b-24aff1128278
       type: derived
 status: experimental
-description: Detects the use of PowerShell cmdlets to clear, remove, or manipulate Windows Event Logs. Attackers commonly clear event logs to remove evidence of their activities and hinder forensic investigation.
+description: Detects Windows event log clearing activity including use of PowerShell cmdlets (Clear-EventLog, Remove-EventLog) or the Windows Security audit log cleared event (EID 1102). Attackers commonly clear event logs to remove evidence of their activities and hinder forensic investigation.
 references:
     - https://twitter.com/oroneequalsone/status/1568432028361830402
     - https://github.com/redcanaryco/atomic-red-team/blob/f339e7da7d05f6057fdfcdd3742bfcf365fee2a9/atomics/T1070.001/T1070.001.md
     - https://eqllib.readthedocs.io/en/latest/analytics/5b223758-07d6-4100-9e11-238cfdd0fe97.html
 author: Tyler Casey @1qazCasey, @scythe_io
 date: 2024/04/24
+modified: 2026/04/10
 tags:
     - attack.defense-evasion
     - attack.t1070.001
 logsource:
     product: windows
-    category: process_creation
+    service: security
 detection:
-    selection:
-        CommandLine|contains:
-            - 'Clear-EventLog'
-            - 'Remove-EventLog'
-            - 'Limit-EventLog'
-            - 'Clear-WinEvent'
-    condition: selection
+    selection_log_clear:
+        EventID:
+            - 1102
+    condition: selection_log_clear
 falsepositives:
     - System administrators performing legitimate log maintenance.
+    - Security software clearing logs as part of a scheduled task.
 level: high

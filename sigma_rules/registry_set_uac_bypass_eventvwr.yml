@@ -19,7 +19,7 @@ logsource:
     category: registry_set
 detection:
     selection:
-        TargetObject|endswith: '\mscfile\shell\open\command'
+        TargetObject|contains: '\mscfile\shell\open\command'
     condition: selection
 falsepositives:
     - Unknown
