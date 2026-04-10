@@ -8,8 +8,8 @@ This is a collection of **detection rules** that help security teams find hacker
 
 The rules are written in **Sigma**, which is like a universal language for detection rules. The advantage is that you write the rule once, and it can be translated to work with whatever security tool your company uses - Splunk, Elastic, Microsoft Sentinel, etc.
 
-Currently there are **140 rules** covering:
-- **Windows** (94 rules) — detecting suspicious processes, registry changes, file activity, network connections, DNS queries, credential access, lateral movement, Kerberos attacks, WMI persistence, DLL hijacking, NTLM relay, network share enumeration, browser credential theft, and process injection
+Currently there are **71 rules** covering:
+- **Windows** (38 QA-validated rules in `sigma_rules/`, plus 69 unmapped rules in `sigma_rules/unmapped_rules/` awaiting test coverage) — detecting suspicious processes, registry changes, file activity, network connections, DNS queries, credential access, lateral movement, Kerberos attacks, WMI persistence, DLL hijacking, NTLM relay, network share enumeration, browser credential theft, and process injection
 - **Linux** (17 rules) — detecting privilege escalation, backdoors, ingress tool transfer, and reconnaissance
 - **Microsoft 365/Cloud** (8 rules) — detecting mailbox tampering, suspicious SharePoint activity, cloud account creation, and PowerShell in M365
 - **Azure** (4 rules) — detecting cloud resource modifications, firewall changes, and application security group changes
@@ -51,12 +51,12 @@ We've successfully validated the end-to-end pipeline from writing a rule to it r
 
 | Step | Status | What We Did |
 |------|--------|-------------|
-| **Rule Upload** | Tested | 140 Sigma rules across Windows, Linux, M365, and Azure |
+| **Rule Upload** | Tested | 71 Sigma rules across Windows, Linux, M365, and Azure |
 | **Validation** | Tested | All rules pass `sigma check` — 0 errors, 0 condition errors |
-| **Conversion** | Tested | `convert-to-splunk.py` generates 112 Splunk saved searches (28 non-Windows rules skipped) |
+| **Conversion** | Tested | `convert-to-splunk.py` generates 43 Splunk saved searches (28 non-Windows skipped; 69 unmapped rules excluded) |
 | **Auto-Commit** | Tested | Splunk pipeline auto-triggers after validation passes; commits `savedsearches.conf` to repo |
-| **Push to Splunk** | Tested | Deployed 112 saved searches to Splunk using `deploy-to-splunk.ps1` |
-| **Regression Testing** | Tested | 57 Atomic Red Team test mappings across process, file, network, registry, DNS, and WMI event types |
+| **Push to Splunk** | Tested | Deployed 43 saved searches to Splunk using `deploy-to-splunk.ps1` |
+| **Regression Testing** | Tested | **50/57 passing (87.7%)** — 57 Atomic Red Team tests across process, file, network, registry, DNS, and WMI event types |
 
 ### Atomic Red Team Coverage
 
@@ -267,7 +267,7 @@ pip install argcomplete
                                         │  ┌───────┐  │
                                         │  │Saved  │  │
                                         │  │Search │  │
-                                        │  │ x 112 │  │
+                                        │  │ x 43  │  │
                                         │  └───────┘  │
                                         └─────────────┘
 ```
@@ -302,6 +302,10 @@ The `regression-test.py` script supports two modes:
 
 **Batch Mode** (`--batch`): Runs all atomic tests back-to-back, waits once for log ingestion, then checks all rules at the end. Much faster for large test suites.
 
+**Parallel Mode** (`--parallel`): Runs up to 5 atomic tests concurrently via WinRM (implies `--batch`). Fastest option — test execution time drops from ~10 min to ~1-2 min for 57 tests.
+
+> **WinRM note:** The default WinRM limit is 5 concurrent shells per user, matching the default parallel worker count. To increase concurrency, raise `MaxShellsPerUser` on the target first: `winrm set winrm/config/winrs '@{MaxShellsPerUser="25"}'`
+
 ### Key Parameters
 
 | Parameter | Description |
@@ -314,8 +318,10 @@ The `regression-test.py` script supports two modes:
 | `--winrm-user` | WinRM username (e.g., `DOMAIN\Administrator`) |
 | `--winrm-pass` | WinRM password |
 | `--test-config` | Path to test mapping YAML file |
-| `--wait-time` | Seconds to wait for log ingestion (default: 60) |
+| `--wait-time` | Seconds to wait after tests before querying Splunk (default: 60) |
+| `--lookback-window` | Minutes to look back in Splunk when querying (overrides auto-calculated window) |
 | `--batch` | Run all atomics first, then check rules (faster) |
+| `--parallel` | Run atomic tests 5 at a time concurrently (implies --batch) |
 | `--skip-atomic-check` | Skip checking if ART is installed |
 | `--dry-run` | Show tests without executing |
 | `--test-id` | Filter by atomic test GUID (can specify multiple) |

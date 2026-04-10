@@ -83,16 +83,32 @@ function Parse-SavedSearchesConf {
 
     $content = Get-Content -Path $FilePath -Encoding UTF8
 
-    foreach ($line in $content) {
-        $line = $line.Trim()
+    $continuationKey = $null
+    $continuationValue = $null
 
-        # Skip empty lines and comments
-        if ([string]::IsNullOrEmpty($line) -or $line.StartsWith('#')) {
+    foreach ($line in $content) {
+        $trimmed = $line.Trim()
+
+        # Skip empty lines and comments (but not during continuation)
+        if ($continuationKey -eq $null -and ([string]::IsNullOrEmpty($trimmed) -or $trimmed.StartsWith('#'))) {
+            continue
+        }
+
+        # Handle continuation lines (previous line ended with \)
+        if ($continuationKey -ne $null) {
+            if ($trimmed.EndsWith('\')) {
+                $continuationValue += ' ' + $trimmed.TrimEnd('\').Trim()
+            } else {
+                $continuationValue += ' ' + $trimmed
+                $currentSearch.Properties[$continuationKey] = $continuationValue.Trim()
+                $continuationKey = $null
+                $continuationValue = $null
+            }
             continue
         }
 
         # New stanza (search name)
-        if ($line -match '^\[(.+)\]$') {
+        if ($trimmed -match '^\[(.+)\]$') {
             if ($currentSearch -and $currentSearch.Name -ne 'default') {
                 $searches += $currentSearch
             }
@@ -101,10 +117,22 @@ function Parse-SavedSearchesConf {
                 Properties = @{}
             }
         }
-        # Property
-        elseif ($line -match '^(\w+)\s*=\s*(.*)$' -and $currentSearch) {
-            $currentSearch.Properties[$Matches[1]] = $Matches[2]
+        # Property (may start a multi-line continuation)
+        elseif ($trimmed -match '^(\w+)\s*=\s*(.*)$' -and $currentSearch) {
+            $key = $Matches[1]
+            $value = $Matches[2]
+            if ($value.EndsWith('\')) {
+                $continuationKey = $key
+                $continuationValue = $value.TrimEnd('\').Trim()
+            } else {
+                $currentSearch.Properties[$key] = $value
+            }
         }
+    }
+
+    # Flush any open continuation
+    if ($continuationKey -ne $null -and $currentSearch) {
+        $currentSearch.Properties[$continuationKey] = $continuationValue.Trim()
     }
 
     # Add the last search

@@ -16,37 +16,28 @@ pip install -r requirements.txt
 
 | Metric | Count |
 |--------|-------|
-| **Total Rules** | 140 |
-| **Windows Rules** | 94 |
+| **Total Rules** | 71 |
+| **Windows Rules** | 38 |
 | **Linux Rules** | 17 |
-| **M365/Cloud Rules** | 8 |
+| **M365/Cloud Rules** | 7 |
 
 ### Rule Categories
 
 | Category | Description | Count |
 |----------|-------------|-------|
-| `proc_creation` | Process creation events | 91 |
-| `file_event` | File system activity | 11 |
+| `proc_creation` | Process creation events | 43 |
+| `file_event` | File system activity | 6 |
 | `m365_*` | Microsoft 365 audit logs | 5 |
-| `net_connection` | Network connections | 4 |
 | `registry_set` | Registry modifications | 4 |
-| `reg_set` | Registry modifications | 4 |
-| `sysmon_lockbitv3` | LockBit 3.0 ransomware detection (Sysmon) | 3 |
+| `net_connection` | Network connections | 3 |
 | `azure_network` | Azure network firewall changes | 2 |
-| `sysmon_ALPHVblackcat` | ALPHV BlackCat ransomware detection (Sysmon) | 2 |
 | `web_sharepoint` | SharePoint web activity | 2 |
-| `azure_firewall` | Azure firewall modifications | 1 |
 | `azure_application` | Azure application security changes | 1 |
-| `file_creation` | File creation events | 1 |
-| `powershell_base64` | Base64-encoded PowerShell detection | 1 |
-| `sysmon_medusa` | Medusa ransomware detection (Sysmon) | 1 |
-| `sysmon_netconnect` | Suspicious network connections (Sysmon) | 1 |
-| `sysmon_RAS` | Remote access software detection (Sysmon) | 1 |
+| `azure_firewall` | Azure firewall modifications | 1 |
 | `dns_query` | DNS query anomalies | 1 |
+| `file_creation` | File creation events | 1 |
+| `reg_set` | Registry modifications | 1 |
 | `wmi_event` | WMI event subscription monitoring | 1 |
-| `security_*` | Windows Security event logs | 1 |
-| `posh_ps` | PowerShell script block logging | 1 |
-| `bitsadmin_mal` | Malicious BITSAdmin activity | 1 |
 
 ## Rule Design Philosophy
 
@@ -99,12 +90,13 @@ sigma convert -t microsoft365defender sigma_rules/*.yml
 
 ```text
 .
-├── sigma_rules/              # Sigma detection rules
+├── sigma_rules/              # QA-validated detection rules (43 Windows + Linux + M365)
 │   ├── proc_creation_*.yml    # Process creation rules
 │   ├── file_event_*.yml       # File event rules
 │   ├── reg_set_*.yml          # Registry rules
 │   ├── net_connection_*.yml   # Network rules
-│   └── m365_*.yml             # Microsoft 365 rules
+│   ├── m365_*.yml             # Microsoft 365 rules
+│   └── unmapped_rules/        # Rules without ART test mappings (not yet QA-validated)
 ├── scripts/
 │   ├── update-readme-stats.py # Auto-update README statistics
 │   ├── convert-to-splunk.py   # Convert rules to Splunk format
@@ -270,9 +262,23 @@ python scripts/regression-test.py \
   --winrm-user "DOMAIN\Administrator" \
   --winrm-pass "password" \
   --test-config tests/art_mapping.yaml \
-  --wait-time 90 \
+  --wait-time 600 \
+  --lookback-window 60 \
   --skip-atomic-check \
   --batch
+
+# Parallel mode (fastest - runs 5 tests concurrently, implies --batch)
+python scripts/regression-test.py \
+  --splunk-host splunk.company.com \
+  --splunk-user admin \
+  --target 192.168.1.100 \
+  --winrm-user "DOMAIN\Administrator" \
+  --winrm-pass "password" \
+  --test-config tests/art_mapping.yaml \
+  --wait-time 600 \
+  --lookback-window 60 \
+  --skip-atomic-check \
+  --parallel
 ```
 
 **Test Output:**
@@ -298,6 +304,10 @@ The HTML report includes:
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `--wait-time` | 60 | Seconds to wait after tests before querying Splunk |
+| `--lookback-window` | (auto) | Minutes to look back in Splunk when querying; auto-calculated from batch start time if omitted |
+| `--batch` | false | Run all atomics first, then check rules (faster) |
+| `--parallel` | false | Run 5 atomic tests concurrently via WinRM (implies --batch) |
 | `--splunk-web-port` | 8000 | Splunk web UI port (for HTML report links) |
 | `--splunk-app` | search | Splunk app context for saved searches |
 | `--test-id` | (all) | Filter by atomic test GUID (can specify multiple) |
