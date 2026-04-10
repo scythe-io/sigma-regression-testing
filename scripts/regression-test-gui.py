@@ -288,16 +288,13 @@ class RegressionTestGUI:
     # ── Command builder ───────────────────────────────────────────────────────
 
     def _build_cmd(self):
-        """Return (cmd_list, extra_env).
+        """Return cmd_list.
 
-        Passwords are passed via environment variables (SPLUNK_PASSWORD,
-        WINRM_PASSWORD) rather than command-line arguments so that special
-        characters in the password are never subject to Windows command-line
-        quoting/escaping rules.
+        Arguments are passed as a list to subprocess.Popen (shell=False),
+        so special characters in passwords are never shell-interpreted.
         """
         script = Path(__file__).parent / "regression-test.py"
         cmd = [sys.executable, str(script)]
-        extra_env = {}
 
         def req(flag, val, name):
             if not val.strip():
@@ -312,15 +309,12 @@ class RegressionTestGUI:
             req("--splunk-host", self.splunk_host.get(), "Splunk Host")
             opt("--splunk-port", self.splunk_port.get())
             opt("--splunk-user", self.splunk_user.get())
-            # Passwords go via env vars, not CLI args
-            if self.splunk_pass.get().strip():
-                extra_env["SPLUNK_PASSWORD"] = self.splunk_pass.get().strip()
+            opt("--splunk-pass", self.splunk_pass.get())
             opt("--splunk-web-port", self.splunk_web.get())
             opt("--splunk-app",  self.splunk_app.get())
             opt("--target",      self.target_ip.get())
             opt("--winrm-user",  self.winrm_user.get())
-            if self.winrm_pass.get().strip():
-                extra_env["WINRM_PASSWORD"] = self.winrm_pass.get().strip()
+            opt("--winrm-pass",  self.winrm_pass.get())
             opt("--wait-time",   self.wait_time.get())
             opt("--lookback-window", self.lookback.get())
         else:
@@ -346,7 +340,7 @@ class RegressionTestGUI:
         for g in self._lines(self.filter_guid):
             cmd += ["--test-id", g]
 
-        return cmd, extra_env
+        return cmd
 
     # ── Execution ─────────────────────────────────────────────────────────────
 
@@ -387,21 +381,27 @@ class RegressionTestGUI:
 
     def _run(self):
         try:
-            cmd, extra_env = self._build_cmd()
+            cmd = self._build_cmd()
         except ValueError as e:
             messagebox.showerror("Missing required field", str(e))
             return
 
         self._clear_output()
 
-        # Show the command — passwords travel via env vars so display those references
-        env_prefix = ""
-        if extra_env.get("SPLUNK_PASSWORD"):
-            env_prefix += "SPLUNK_PASSWORD=*** "
-        if extra_env.get("WINRM_PASSWORD"):
-            env_prefix += "WINRM_PASSWORD=*** "
-        cmd_display = " ".join(f'"{t}"' if " " in t else t for t in cmd)
-        self._append(f"$ {env_prefix}{cmd_display}\n\n", "cmd")
+        # Show the command with password values masked
+        _pass_flags = {"--splunk-pass", "--winrm-pass"}
+        masked_parts = []
+        hide_next = False
+        for token in cmd:
+            if hide_next:
+                masked_parts.append("***")
+                hide_next = False
+            elif token in _pass_flags:
+                masked_parts.append(token)
+                hide_next = True
+            else:
+                masked_parts.append(f'"{token}"' if " " in token else token)
+        self._append("$ " + " ".join(masked_parts) + "\n\n", "cmd")
 
         self.run_btn.config(state="disabled")
         self.stop_btn.config(state="normal")
@@ -412,7 +412,7 @@ class RegressionTestGUI:
 
         def worker():
             try:
-                env = {**os.environ, "PYTHONUNBUFFERED": "1", **extra_env}
+                env = {**os.environ, "PYTHONUNBUFFERED": "1"}
                 self.process = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
