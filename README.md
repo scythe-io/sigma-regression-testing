@@ -35,18 +35,18 @@ pip install -r requirements.txt
 | `azure_network` | Azure network firewall changes | 2 |
 | `sysmon_ALPHVblackcat` | ALPHV BlackCat ransomware detection (Sysmon) | 2 |
 | `web_sharepoint` | SharePoint web activity | 2 |
-| `azure_application` | Azure application security changes | 1 |
 | `azure_firewall` | Azure firewall modifications | 1 |
-| `bitsadmin_mal` | Malicious BITSAdmin activity | 1 |
-| `dns_query` | DNS query anomalies | 1 |
+| `azure_application` | Azure application security changes | 1 |
 | `file_creation` | File creation events | 1 |
-| `posh_ps` | PowerShell script block logging | 1 |
 | `powershell_base64` | Base64-encoded PowerShell detection | 1 |
-| `security_*` | Windows Security event logs | 1 |
 | `sysmon_medusa` | Medusa ransomware detection (Sysmon) | 1 |
 | `sysmon_netconnect` | Suspicious network connections (Sysmon) | 1 |
 | `sysmon_RAS` | Remote access software detection (Sysmon) | 1 |
+| `dns_query` | DNS query anomalies | 1 |
 | `wmi_event` | WMI event subscription monitoring | 1 |
+| `security_*` | Windows Security event logs | 1 |
+| `posh_ps` | PowerShell script block logging | 1 |
+| `bitsadmin_mal` | Malicious BITSAdmin activity | 1 |
 
 ## Rule Design Philosophy
 
