@@ -1110,11 +1110,13 @@ def main():
         password=splunk_pass
     )
 
+    winrm_pass = args.winrm_pass or os.environ.get('WINRM_PASSWORD')
+
     runner = AtomicRunner(
         target=args.target,
         use_winrm=args.target != "localhost",
         winrm_user=args.winrm_user,
-        winrm_pass=args.winrm_pass
+        winrm_pass=winrm_pass
     )
 
     # Check Atomic RT installation
