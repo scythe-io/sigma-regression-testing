@@ -32,12 +32,12 @@ pip install -r requirements.txt
 | `net_connection` | Network connections | 3 |
 | `azure_network` | Azure network firewall changes | 2 |
 | `web_sharepoint` | SharePoint web activity | 2 |
-| `azure_application` | Azure application security changes | 1 |
 | `azure_firewall` | Azure firewall modifications | 1 |
-| `dns_query` | DNS query anomalies | 1 |
+| `azure_application` | Azure application security changes | 1 |
 | `file_creation` | File creation events | 1 |
-| `reg_set` | Registry modifications | 1 |
+| `dns_query` | DNS query anomalies | 1 |
 | `wmi_event` | WMI event subscription monitoring | 1 |
+| `reg_set` | Registry modifications | 1 |
 
 ## Rule Design Philosophy
 
