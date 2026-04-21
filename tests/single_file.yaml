@@ -1,0 +1,26 @@
+tests:
+- name: Clear Windows Event Logs
+  description: Clears Security event log using wevtutil
+  technique_id: T1070.001
+  atomic_test_guid: e6abb60e-26b8-41da-8aae-0c35174b0967
+  expected_rules:
+  - Windows Event Log Cleared
+  cleanup: true
+  timeout_seconds: 300
+- name: System Information Discovery
+  description: Runs systeminfo command
+  technique_id: T1082
+  atomic_test_guid: 66571c33-5533-4b71-8d3f-02626c89c5dc
+  expected_rules:
+  - Conti Ransomware Discovery Commands
+  cleanup: true
+- name: Create Local Admin User
+  description: Creates a new local administrator account
+  technique_id: T1136.001
+  atomic_test_guid: a524ce99-86de-4f6c-88f5-8c3439e21ed5
+  expected_rules:
+  - New Local User Created
+  input_arguments:
+    username: AtomicTestUser
+    password: AtomicP@ss123!
+  cleanup: true
